@@ -13,9 +13,10 @@ import numpy as np
 # alpha : Q
 # pi : Q x Q
 
-MAX_FIXED_POINT_ITERATIONS = 1000
-EPSILON = 1e-10
-EM_ITERATIONS = 100
+MAX_FIXED_POINT_ITERATIONS = 100
+EPSILON = 1e-8
+PRECISION = 1e-5
+EM_ITERATIONS = 1000
 
 
 def m_step(X, tau):
@@ -32,9 +33,6 @@ def m_step(X, tau):
                     if i != j:
                         num += tau[i, q] * tau[j, l] * X[i, j]
                         denum += tau[i, q] * tau[j, l]
-            # pi[q, l] = np.einsum("ij,i,j->", X, tau[:, q], tau[:, l]) / (
-            #    np.einsum("i,j->", tau[:, q], tau[:, l]) - np.sum(tau[:, q] * tau[:, l])
-            # )
             pi[q, l] = num / denum
     return alpha, pi
 
@@ -73,12 +71,17 @@ def log_likelihood(X, alpha, pi, tau):
             for j in range(n):
                 if i != j:
                     for l in range(Q):
-                        ll += tau[i, q] * tau[j, l] * np.log(b(X[i, j], pi[q, l]))
+                        ll += (
+                            (1 / 2)
+                            * tau[i, q]
+                            * tau[j, l]
+                            * np.log(b(X[i, j], pi[q, l]))
+                        )
     return ll
 
 
 def parameters_are_ok(alpha, pi, tau):
-    if np.abs(np.sum(alpha) - 1) > EPSILON:
+    if np.abs(np.sum(alpha) - 1) > PRECISION:
         return False
     if np.any(alpha < 0):
         return False
@@ -92,29 +95,38 @@ def parameters_are_ok(alpha, pi, tau):
         return False
     if np.any(tau > 1):
         return False
-    if np.any((np.sum(tau, axis=1) - 1) > EPSILON):
+    if np.any((np.sum(tau, axis=1) - 1) > PRECISION):
         return False
-    if np.any(pi - pi.transpose() > EPSILON):
+    if np.any(pi - pi.transpose() > PRECISION):
         return False
     return True
 
 
 def em_algorithm(X, Q):
     # Initialisation
-    alpha = np.random.rand(Q)
-    alpha = alpha / np.sum(alpha)
-    pi = np.ones((Q, Q)) / Q**2
+    tau = np.random.rand(X.shape[0], Q)
+    tau = tau / np.sum(tau, axis=1)[:, np.newaxis]
+    previous_ll = -np.inf
     # EM algorithm
     for i in range(EM_ITERATIONS):
-        tau = e_step(X, alpha, pi)
         alpha, pi = m_step(X, tau)
+        tau = e_step(X, alpha, pi)
+        ll = log_likelihood(X, alpha, pi, tau)
         print(
-            f"After EM iteration {i}/{EM_ITERATIONS} : Log likelihood {log_likelihood(X, alpha, pi, tau)}...",
+            f"After EM iteration {i}/{EM_ITERATIONS} : Log likelihood {ll}...",
             end="",
         )
         if not parameters_are_ok(alpha, pi, tau):
             print(" Values warning.", end="")
+            raise ValueError("Parameters are not ok")
+        if previous_ll - PRECISION > ll:
+            print(" Log likelihood warning.", end="")
+            raise ValueError("Log likelihood is decreasing")
+        print("Alpha", alpha, end="")
         print("\r", end="", flush=True)
+        if np.abs(ll - previous_ll) < PRECISION:
+            break
+        previous_ll = ll
     print()
     return alpha, pi, tau
 
@@ -166,7 +178,7 @@ if __name__ == "__main__":
         40,
         2,
         np.array([0.5, 0.5]),
-        np.array([[0.2, 0.1], [0.1, 0.2]]),
+        np.array([[0, 0.1], [0.1, 0.2]]),
     )
 
     draw_graph(X, Z)
