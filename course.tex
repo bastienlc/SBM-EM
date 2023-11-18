@@ -1,54 +1,81 @@
-\part{Cours}
+\section{Ce que j'ai compris}
 
-\newcommand{\lorem}{Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ac metus porta, dictum velit nec, laoreet lorem. Quisque facilisis nulla et sapien pretium, ut consectetur est tincidunt. Suspendisse eu diam ligula.}
+Un modèle de graphes  aléatoires qui à la fois :
+\begin{itemize}
+    \item est un modèle de mélange
+    \item décrit explicitement les liens entre les noeuds
+\end{itemize}
 
-\section{Exemple de section}
-\lorem
+\paragraph{Notations :}
+\begin{itemize}
+    \item $X_{ij}\in \{0,1\}$ l'existence d'une arête entre les noeuds $i$ et $j$.
+    \item $Q$ le nombre de classes, avec $\{\alpha_1, \dots, \alpha_Q\}$ les proportions de chaque classe.
+    \item $Z_{iq} \in \{0,1\}$ l'appartenance du noeud $i$ à la classe $q$.
+    \item $\pi_{ql}=\pi_{lq}$ la probabilité d'un lien entre un noeud de la classe $q$ et un noeud de la classe $l$.
+\end{itemize}
 
-\subsection{Exemple de sous-section}
-\lorem
-\subsubsection{Exemple de sous-sous-section}
-\lorem
-\paragraph{Exemple de paragraphe}
-\lorem
-\subparagraph{Exemple de sous-paragraphe}
-\lorem
+\paragraph{Hypothèses :}
+\begin{itemize}
+    \item Bonne définition des classes : $\sum_q Z_{iq}=1$, $\sum_q \alpha_q=1$ et $\alpha_q=P(Z_{iq}=1)$.
+    \item Pas de self loop : $X_{ii}=0$
+    \item Indépendances des arêtes conditionnellement aux classes : $X_{ij}| \{i\in q, j\in l\} \sim \mathcal{B}(\pi_{ql})$.
+\end{itemize}
 
-\begin{definition}
-    Exemple de définition.
-\end{definition}
+\paragraph{Propriétés importantes :}
+\begin{itemize}
+    \item Distribution des degrés binomiale (conditionnellement aux classes).
+\end{itemize}
 
-\begin{propriety}
-    Exemple de propriété.
-\end{propriety}
+\vspace{5mm}
 
-\begin{proposition}
-    Exemple de proposition.
-\end{proposition}
+Extension : modèle indépendant, chaque classe a une propension à se lier avec les autres classes. On a alors $\pi_{ql}=\eta_q\eta_l$.
 
-\begin{theorem}
-    Exemple de théorème.
-\end{theorem}
+Log-vraissemblance du modèle (est-ce que le modèle observé est probable au vu des paramètres fixés ?) :
+$$\log \mathcal{L}(X, Z) = \sum_i\sum_qZ_{iq}\log \alpha_q + \frac{1}{2} \sum_{i\neq j}\sum_{q,l}Z_{iq}Z_{jl}\log b(X_{ij,\pi_{ql}})$$
+avec $b(x,\pi)=\pi^x(1-\pi)^{1-x}$.
 
-\begin{corollary}
-    Exemple de corollaire.
-\end{corollary}
+Estimation : on veut estimer les paramètres du modèle en maximisant la log-vraisemblance. L'algorithme EM n'est pas utilisable ici. Le papier se concentre sur l'optimisation d'une borne inférieure de la log-vraisemblance, de façon similaire à l'algorithme EM.
 
-\begin{lemma}
-    Exemple de lemme.
-\end{lemma}
+\begin{itemize}
+    \item Étape E : on calcule les paramètres optimaux $\hat{\tau}_{iq}$ de la distribution conditionnelle approchée (point fixe).
+    \item Étape M : on maximise la log-vraisemblance approchée par rapport aux paramètres du modèle.
+\end{itemize}
+On note que :
+\begin{itemize}
+    \item On a une garantie de croissance de la log-vraisemblance approchée à chaque itération.
+    \item Le nombre de classes est fixé à l'avance. Le papier propose un critère de sélection du nombre de classes.
+\end{itemize}
 
-\begin{proof}
-    Exemple de preuve.
-\end{proof}
 
-\begin{example}
-    Exemple d'exemple.
-\end{example}
+\section{Questions}
 
-\begin{remark}
-    Exemple de remarque.
-\end{remark}
+Rentrer dans le détail des preuves ?
 
-$$\circled{T} \cplus \cminus \R \N \Q \C \Z \independant$$
-\mybox{Exemple de boîte.}
+\section{Objectifs}
+
+\begin{itemize}
+    \item Implémenter l'algorithme d'estimation.
+    \item Tester l'implémentation sur le même dataset que le papier.
+    \item Trouver des datasets pertinents sur lesquels tester l'algorithme.
+    \item Proposer une méthode d'estimation alternative (idées, preuves, implémentation)
+    \item Investiguer la pertinence du critère de sélection du nombre de classes. Implémenter d'autres critères, montrer leur pertinence en fonction du type de tâche.
+    \item Étudier le sampling après estimation : est-ce que le modèle est capable de générer des graphes similaires à ceux du dataset ?
+\end{itemize}
+
+\section{Ce qui sera simple}
+
+\begin{itemize}
+    \item Sampler un graphe aléatoire avec des paramètres fixés.
+    \item Implémenter l'algorithme d'estimation.
+\end{itemize}
+
+\section{Ce qui sera difficile}
+
+\begin{itemize}
+    \item Faire tourner l'algorithme efficacement.
+    \item Trouver des méthodes d'estimation alternatives qui s'appliquent.
+\end{itemize}
+
+\section{Idées, critiques}
+
+Comparaison avec d'autres modèles ?
