@@ -45,11 +45,8 @@ def e_step(X, alpha, pi):
     for _ in range(MAX_FIXED_POINT_ITERATIONS):
         previous_tau = np.copy(tau)
         b_values = compute_b(X, pi)
-        for i in range(n):
-            for q in range(Q):
-                tau[i, q] = alpha[q]
-                tau[i, q] *= np.prod(b_values[i, q, :, :] ** previous_tau, axis=(0, 1))
-            tau[i, :] /= np.sum(tau[i, :])
+        tau = alpha[None, :] * np.prod(b_values**previous_tau, axis=(2, 3))
+        tau /= np.sum(tau, axis=1)[:, None]
 
         if np.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
             break

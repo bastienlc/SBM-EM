@@ -46,21 +46,17 @@ def em_algorithm(X, Q):
     return alpha, pi, tau
 
 
-def arrange_classes(alpha, estimated_alpha):
-    # Find which class is which, as the ordering of the classes is arbitrary
-    Q = alpha.shape[0]
-    ordering = np.zeros(Q, dtype=int)
-    indexes = np.argsort(alpha)
-    matching_indexes = np.argsort(estimated_alpha)
-    ordering[indexes] = matching_indexes
-    return ordering  # A FIXER
+def sort_parameters(alpha, pi):
+    sort_indices = np.argsort(alpha)
+    return alpha[sort_indices], pi[sort_indices, :][:, sort_indices]
 
 
 if __name__ == "__main__":
     # Test the algorithm on a random graph
-    Q = 5
-    n = 50
+    Q = 2
+    n = 200
     X, Z, alpha, pi = random_graph(n, Q)
+    alpha, pi = sort_parameters(alpha, pi)
 
     draw_graph(X, Z)
 
@@ -69,11 +65,11 @@ if __name__ == "__main__":
     # ) as prof:
     #    with record_function("em_algorithm"):
     estimated_alpha, estimated_pi, tau = em_algorithm(X, Q)
-    ordering = arrange_classes(alpha, estimated_alpha)
+    estimated_alpha, estimated_pi = sort_parameters(estimated_alpha, estimated_pi)
 
     print("Estimated alpha", estimated_alpha)
-    print("Alpha", alpha[ordering])
+    print("Alpha", alpha)
     print("Estimated pi", estimated_pi)
-    print("Pi", pi[ordering])
+    print("Pi", pi)
 
     # print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))
