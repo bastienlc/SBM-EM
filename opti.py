@@ -5,19 +5,23 @@ from constants import *
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.set_grad_enabled(False)
 torch.no_grad()
+torch.set_default_dtype(
+    torch.float64
+)  # torch.float32 is not precise enough for our needs (nans show up)
 print(f"Using device {DEVICE}")
 
 
 def init_X(X):
-    return torch.tensor(X, device=DEVICE).float()
+    return torch.tensor(X, device=DEVICE, dtype=torch.float64)
 
 
 def m_step(X: torch.Tensor, tau: torch.Tensor):
     n = X.shape[0]
     alpha = torch.sum(tau, axis=0) / n
-    pi = torch.einsum("ij,iq,jl->ql", X, tau, tau) / (
-        torch.einsum("iq,jl->ql", tau, tau) - torch.einsum("iq,il->ql", tau, tau)
-    )
+    pi = (
+        torch.einsum("ij,iq,jl->ql", X, tau, tau)
+        - torch.einsum("ii,iq,il->ql", X, tau, tau)
+    ) / (torch.einsum("iq,jl->ql", tau, tau) - torch.einsum("iq,il->ql", tau, tau))
 
     return alpha, pi
 
@@ -38,20 +42,24 @@ def compute_b(X: torch.Tensor, pi: torch.Tensor):
     return b_values
 
 
+def fixed_point_iteration(tau, X, alpha, pi):
+    n = X.shape[0]
+    b_values = compute_b(X, pi)
+    tau = alpha.unsqueeze(0).expand(n, -1) * torch.prod(
+        torch.prod(torch.pow(b_values, tau), dim=3), dim=2
+    )
+    tau /= torch.sum(tau, dim=1, keepdim=True)
+
+    return tau
+
+
 def e_step(X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor):
     n = X.shape[0]
     Q = alpha.shape[0]
     tau = init_tau(n, Q)
     for _ in range(MAX_FIXED_POINT_ITERATIONS):
         previous_tau = tau.clone()
-        b_values = compute_b(X, pi)
-        for i in range(n):
-            for q in range(Q):
-                tau[i, q] = alpha[q]
-                tau[i, q] *= torch.prod(
-                    torch.prod(b_values[i, q, :, :] ** previous_tau, dim=0), dim=0
-                )
-            tau[i, :] /= torch.sum(tau[i, :])
+        tau = fixed_point_iteration(tau, X, alpha, pi)
 
         if torch.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
             break
