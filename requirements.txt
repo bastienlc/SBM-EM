@@ -1,0 +1,5 @@
+pytest
+pytorch
+numpy
+networkx
+matplotlib
