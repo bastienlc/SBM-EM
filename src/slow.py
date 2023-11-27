@@ -34,20 +34,27 @@ def init_tau(n, Q):
     return tau / np.sum(tau, axis=1)[:, np.newaxis]
 
 
+def fixed_point_iteration(tau, X, alpha, pi):
+    n = X.shape[0]
+    Q = alpha.shape[0]
+    for i in range(n):
+        for q in range(Q):
+            tau[i, q] = alpha[q]
+            for j in range(n):
+                if i != j:
+                    for l in range(Q):
+                        tau[i, q] *= b(X[i, j], pi[q, l]) ** tau[j, l]
+        tau[i, :] /= np.sum(tau[i, :])
+    return tau
+
+
 def e_step(X, alpha, pi):
     n = X.shape[0]
     Q = alpha.shape[0]
     tau = init_tau(n, Q)
     for _ in range(MAX_FIXED_POINT_ITERATIONS):
         previous_tau = np.copy(tau)
-        for i in range(n):
-            for q in range(Q):
-                tau[i, q] = alpha[q]
-                for j in range(n):
-                    if i != j:
-                        for l in range(Q):
-                            tau[i, q] *= b(X[i, j], pi[q, l]) ** previous_tau[j, l]
-            tau[i, :] /= np.sum(tau[i, :])
+        tau = fixed_point_iteration(tau, X, alpha, pi)
 
         if np.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
             break

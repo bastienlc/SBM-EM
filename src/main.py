@@ -1,19 +1,9 @@
-# A mixture model for random graphs
-# J.-J. Daudin · F. Picard · S. Robin
-
 import numpy as np
+import torch
 
 from constants import *
-from faster import e_step, init_tau, init_X, log_likelihood, m_step, parameters_are_ok
 from graphs import draw_graph, random_graph
-
-# n noeuds
-# Q classes
-# X : n x n
-# Z : n x Q
-# tau : n x Q
-# alpha : Q
-# pi : Q x Q
+from opti import e_step, init_tau, init_X, log_likelihood, m_step, parameters_are_ok
 
 
 def em_algorithm(X, Q):
@@ -43,6 +33,12 @@ def em_algorithm(X, Q):
             break
         previous_ll = ll
     print()
+
+    if isinstance(alpha, torch.Tensor):
+        alpha = alpha.cpu().detach().numpy()
+        pi = pi.cpu().detach().numpy()
+        tau = tau.cpu().detach().numpy()
+
     return alpha, pi, tau
 
 
@@ -60,10 +56,6 @@ if __name__ == "__main__":
 
     draw_graph(X, Z)
 
-    # with profile(
-    #    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=False
-    # ) as prof:
-    #    with record_function("em_algorithm"):
     estimated_alpha, estimated_pi, tau = em_algorithm(X, Q)
     estimated_alpha, estimated_pi = sort_parameters(estimated_alpha, estimated_pi)
 
@@ -71,5 +63,3 @@ if __name__ == "__main__":
     print("Alpha", alpha)
     print("Estimated pi", estimated_pi)
     print("Pi", pi)
-
-    # print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=10))

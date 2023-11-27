@@ -10,9 +10,9 @@ def init_X(X):
 def m_step(X, tau):
     n = X.shape[0]
     alpha = np.sum(tau, axis=0) / n
-    pi = np.einsum("ij,iq,jl->ql", X, tau, tau) / (
-        np.einsum("iq,jl->ql", tau, tau) - np.einsum("iq,il->ql", tau, tau)
-    )
+    pi = (
+        np.einsum("ij,iq,jl->ql", X, tau, tau) - np.einsum("ii,iq,il->ql", X, tau, tau)
+    ) / (np.einsum("iq,jl->ql", tau, tau) - np.einsum("iq,il->ql", tau, tau))
     return alpha, pi
 
 
@@ -38,15 +38,21 @@ def compute_b(X: np.ndarray, pi: np.ndarray):
     return b_values
 
 
+def fixed_point_iteration(tau, X, alpha, pi):
+    b_values = compute_b(X, pi)
+    tau = alpha[None, :] * np.prod(b_values**tau, axis=(2, 3))
+    tau /= np.sum(tau, axis=1)[:, None]
+
+    return tau
+
+
 def e_step(X, alpha, pi):
     n = X.shape[0]
     Q = alpha.shape[0]
     tau = init_tau(n, Q)
     for _ in range(MAX_FIXED_POINT_ITERATIONS):
         previous_tau = np.copy(tau)
-        b_values = compute_b(X, pi)
-        tau = alpha[None, :] * np.prod(b_values**previous_tau, axis=(2, 3))
-        tau /= np.sum(tau, axis=1)[:, None]
+        tau = fixed_point_iteration(tau, X, alpha, pi)
 
         if np.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
             break
