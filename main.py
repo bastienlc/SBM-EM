@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
+from criterions import draw_criterion
 from src.constants import *
-from src.critertions import draw_critertion
 from src.faster import (
     e_step,
     init_tau,
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     alpha, pi = sort_parameters(alpha, pi)
 
     draw_graph(X, Z)
-    draw_critertion(n)
+    draw_criterion(n)
 
     estimated_alpha, estimated_pi, tau = em_algorithm(X, Q, n_init=10)
 
