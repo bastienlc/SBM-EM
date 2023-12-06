@@ -1,6 +1,6 @@
 import torch
 
-from constants import *
+from .constants import *
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.set_grad_enabled(False)

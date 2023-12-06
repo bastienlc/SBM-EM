@@ -1,6 +1,6 @@
 import numpy as np
 
-from faster import (
+from ..faster import (
     b,
     compute_b,
     e_step,

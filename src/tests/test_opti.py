@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from faster import b, init_tau
-from opti import (
+from ..faster import b, init_tau
+from ..opti import (
     DEVICE,
     compute_b,
     e_step,
@@ -22,7 +22,7 @@ pi = pi / np.sum(pi, axis=0)
 tau = init_tau(n, Q)
 
 
-class TestFaster:
+class TestOpti:
     def test_compute_b(self):
         computed_values = compute_b(
             torch.tensor(X, device=DEVICE), torch.tensor(pi, device=DEVICE)

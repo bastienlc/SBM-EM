@@ -1,6 +1,6 @@
 import numpy as np
 
-from constants import *
+from .constants import *
 
 
 def init_X(X):
