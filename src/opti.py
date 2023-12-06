@@ -56,13 +56,22 @@ def fixed_point_iteration(tau, X, alpha, pi):
 def e_step(X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor):
     n = X.shape[0]
     Q = alpha.shape[0]
-    tau = init_tau(n, Q)
-    for _ in range(MAX_FIXED_POINT_ITERATIONS):
-        previous_tau = tau.clone()
-        tau = fixed_point_iteration(tau, X, alpha, pi)
+    n_inits = 0
+    norm_change = 1e100
+    while norm_change > EPSILON:
+        if n_inits >= MAX_FIXED_POINT_INITS:
+            raise TimeoutError(
+                f"Fixed points iteration did not converge after {n_inits} initializations."
+            )
+        tau = init_tau(n, Q)
+        n_inits += 1
+        for _ in range(MAX_FIXED_POINT_ITERATIONS):
+            previous_tau = tau.clone()
+            tau = fixed_point_iteration(tau, X, alpha, pi)
+            norm_change = torch.linalg.norm(previous_tau - tau, ord=1)
 
-        if torch.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
-            break
+            if norm_change < EPSILON:
+                break
     return tau
 
 
