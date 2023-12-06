@@ -12,7 +12,8 @@ def draw_graph(X, Z):
         for j in range(i + 1, n):
             if X[i, j] == 1:
                 G.add_edge(i, j)
-    nx.draw(G, node_color=np.argmax(Z, axis=1))
+    pos = nx.kamada_kawai_layout(G)
+    nx.draw(G, pos, node_color=np.argmax(Z, axis=1))
     plt.show()
 
 

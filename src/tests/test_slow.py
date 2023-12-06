@@ -1,6 +1,6 @@
 import numpy as np
 
-from slow import b, e_step, fixed_point_iteration, init_tau, log_likelihood, m_step
+from ..slow import b, e_step, fixed_point_iteration, init_tau, log_likelihood, m_step
 
 n = 5
 Q = 5
@@ -13,7 +13,7 @@ pi = pi / np.sum(pi, axis=0)
 tau = init_tau(n, Q)
 
 
-class TestFaster:
+class TestSlow:
     def test_fixed_point_iteration(self):
         previous_tau = np.copy(tau)
         computed_tau = fixed_point_iteration(tau, X, alpha, pi)

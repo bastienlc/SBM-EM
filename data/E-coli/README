@@ -1,0 +1,7 @@
+`primCpdsSmmReactionsCompounds.col` and `primCpdsSmmReactionsCompounds_Coli_updated.col` are a dataset taken from the "data" folder of the MOTUS software version 1.1.3: https://doua.prabi.fr/software/motus
+The files correspond to the metabolic network of the bacterium Escherichia coli as retrieved from BioCyc version 9.0. Secondary compounds are removed, reactions where large molecules are involved (tRNAs, proteins) are removed.
+The MOTUS documentation gives no further information regarding the "updated" version of the dataset.
+More datasets can be fetched at MOTUSWEB: http://pbil.univ-lyon1.fr/software/motus/
+
+`Escherichia-coli.txt` is also a dataset of the metabolism of the Escherichia batcterium, but taken from biocyc.org.
+`Escherichia-coli_edge-list.txt` was derived from it using code in /src/data.py. However, the network was not pre-processed to remove secondary reactions, so the graph tends to be too large.

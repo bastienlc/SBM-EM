@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-from constants import *
-from graphs import draw_graph, random_graph
-from opti import e_step, init_tau, init_X, log_likelihood, m_step, parameters_are_ok
+from src.constants import *
+from src.graphs import draw_graph, random_graph
+from src.faster import e_step, init_tau, init_X, log_likelihood, m_step, parameters_are_ok
 
 
 def em_algorithm(X, Q):
@@ -50,7 +50,7 @@ def sort_parameters(alpha, pi):
 if __name__ == "__main__":
     # Test the algorithm on a random graph
     Q = 2
-    n = 200
+    n = 10
     X, Z, alpha, pi = random_graph(n, Q)
     alpha, pi = sort_parameters(alpha, pi)
 
