@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from constants import *
+from .constants import *
 
 
 def sort_parameters(alpha, pi):
@@ -23,3 +23,7 @@ def drop_init(n_init, tau_list, ll_list):
         )
     else:
         return n_init, tau_list, ll_list
+
+
+def b(x, pi):
+    return pi**x * (1 - pi) ** (1 - x)
