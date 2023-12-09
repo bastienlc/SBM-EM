@@ -11,6 +11,18 @@ torch.set_default_dtype(
 )  # torch.float32 is not precise enough for our needs (nans show up)
 
 
+def normalize_matrix_with_nan_handling(tau):
+    normalized_tau = tau / torch.sum(tau, dim=1, keepdim=True)
+    if torch.any(torch.isnan(normalized_tau)):
+        _, max_indices = torch.max(tau, dim=1, keepdim=True)
+        replacement = torch.full_like(tau, EPSILON)
+        replacement.scatter_(1, max_indices, 1 - (tau.shape[1] - 1) * EPSILON)
+        nan_columns = torch.isnan(normalized_tau)
+        normalized_tau = torch.where(nan_columns, replacement, normalized_tau)
+
+    return normalized_tau
+
+
 class PytorchImplementation(GenericImplementation):
     def input(self, array):
         return torch.tensor(array, device=DEVICE, dtype=torch.float64)
@@ -59,12 +71,15 @@ class PytorchImplementation(GenericImplementation):
         n = X.shape[0]
         Q = alpha.shape[0]
         n_inits = 0
-        norm_change = 1e100
+        norm_change = 1 / EPSILON
         while norm_change > EPSILON:
             if n_inits >= MAX_FIXED_POINT_INITS:
-                raise TimeoutError(
-                    f"Fixed points iteration did not converge after {n_inits} initializations."
-                )
+                if RAISE_ERROR_ON_FIXED_POINT:
+                    raise TimeoutError(
+                        f"Fixed points iteration did not converge after {n_inits} initializations."
+                    )
+                else:
+                    break
             tau = self.init_tau(n, Q)
             n_inits += 1
             for _ in range(MAX_FIXED_POINT_ITERATIONS):
@@ -91,24 +106,30 @@ class PytorchImplementation(GenericImplementation):
     def parameters_are_ok(
         self, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
     ):
+        if torch.any(torch.isnan(alpha)):
+            raise ValueError(f"Some alphas are nan")
+        if torch.any(torch.isnan(pi)):
+            raise ValueError(f"Some pis are nan")
+        if torch.any(torch.isnan(tau)):
+            raise ValueError(f"Some taus are nan")
         if torch.abs(torch.sum(alpha) - 1) > PRECISION:
-            return False
+            raise ValueError(f"Sum of alpha is {torch.sum(alpha)}")
         if torch.any(alpha < 0):
-            return False
+            raise ValueError(f"Some alphas are negative")
         if torch.any(alpha > 1):
-            return False
+            raise ValueError(f"Some alphas are greater than 1")
         if torch.any(pi < 0):
-            return False
+            raise ValueError(f"Some pis are negative")
         if torch.any(pi > 1):
-            return False
+            raise ValueError(f"Some pis are greater than 1")
         if torch.any(tau < 0):
-            return False
+            raise ValueError(f"Some taus are negative")
         if torch.any(tau > 1):
-            return False
+            raise ValueError(f"Some taus are greater than 1")
         if torch.any((torch.sum(tau, axis=1) - 1) > PRECISION):
-            return False
+            raise ValueError(f"Some taus do not sum to 1")
         if torch.any(pi - torch.transpose(pi, 0, 1) > PRECISION):
-            return False
+            raise ValueError(f"Pi is not symmetric")
         return True
 
 
@@ -150,4 +171,73 @@ class PytorchLowMemoryImplementation(PytorchImplementation):
             b_values[i, :, :] = 1
             log_b_values = torch.log(b_values)
             ll += 1 / 2 * torch.einsum("q,jl,jql->", tau[i, :], tau, log_b_values)
+        return ll
+
+
+class PytorchLogImplementation(PytorchImplementation):
+    def fixed_point_iteration(self, tau, X, alpha, pi):
+        Q = pi.shape[0]
+        previous_tau = tau.clone()
+        for q in range(Q):
+            tau[:, q] = (
+                torch.log(alpha[q])
+                + torch.einsum("jl,ij,l->i", previous_tau, X, torch.log(pi[q, :]))
+                + torch.einsum(
+                    "jl,ij,l->i", previous_tau, 1 - X, torch.log(1 - pi[q, :])
+                )
+                - torch.einsum(
+                    "il,i,l->i", previous_tau, torch.diagonal(X), torch.log(pi[q, :])
+                )
+                - torch.einsum(
+                    "il,i,l->i",
+                    previous_tau,
+                    torch.diagonal(1 - X),
+                    torch.log(1 - pi[q, :]),
+                )
+            )
+
+        tau = torch.exp(tau)
+        tau = normalize_matrix_with_nan_handling(tau)
+
+        return tau
+
+    def log_likelihood(
+        self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
+    ):
+        n = X.shape[0]
+        Q = alpha.shape[0]
+        ll = 0
+        ll += torch.sum(tau * torch.log(alpha).expand(n, -1), dim=[0, 1])
+        ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
+        for q in range(Q):
+            ll += (
+                1
+                / 2
+                * torch.einsum("i,jl,ij,l->", tau[:, q], tau, X, torch.log(pi[q, :]))
+            )
+            ll += (
+                1
+                / 2
+                * torch.einsum(
+                    "i,jl,ij,l->", tau[:, q], tau, 1 - X, torch.log(1 - pi[q, :])
+                )
+            )
+            ll -= (
+                1
+                / 2
+                * torch.einsum(
+                    "i,il,i,l->", tau[:, q], tau, torch.diagonal(X), torch.log(pi[q, :])
+                )
+            )
+            ll -= (
+                1
+                / 2
+                * torch.einsum(
+                    "i,il,i,l->",
+                    tau[:, q],
+                    tau,
+                    torch.diagonal(1 - X),
+                    torch.log(1 - pi[q, :]),
+                )
+            )
         return ll

@@ -20,9 +20,6 @@ class NumpyImplementation(GenericImplementation):
         ) / (np.einsum("iq,jl->ql", tau, tau) - np.einsum("iq,il->ql", tau, tau))
         return alpha, pi
 
-    def _b(self, x, pi):
-        return pi**x * (1 - pi) ** (1 - x)
-
     def init_tau(self, n, Q):
         tau = np.random.rand(n, Q)
         return tau / np.sum(tau, axis=1)[:, np.newaxis]

@@ -6,6 +6,7 @@ from ..implementations import (
     NumpyImplementation,
     PythonImplementation,
     PytorchImplementation,
+    PytorchLogImplementation,
     PytorchLowMemoryImplementation,
 )
 from ..utils import b
@@ -102,6 +103,11 @@ def test_partial_compute_b(partial_compute_b, input, output):
             PytorchLowMemoryImplementation().input,
             PytorchLowMemoryImplementation().output,
         ),
+        (
+            PytorchLogImplementation().fixed_point_iteration,
+            PytorchLogImplementation().input,
+            PytorchLogImplementation().output,
+        ),
     ],
 )
 def test_fixed_point_iteration(fixed_point_iteration, input, output):
@@ -145,6 +151,11 @@ def test_fixed_point_iteration(fixed_point_iteration, input, output):
             PytorchLowMemoryImplementation().input,
             PytorchLowMemoryImplementation().output,
         ),
+        (
+            PytorchLogImplementation().e_step,
+            PytorchLogImplementation().input,
+            PytorchLogImplementation().output,
+        ),
     ],
 )
 def test_e_step(e_step, input, output):
@@ -176,6 +187,11 @@ def test_e_step(e_step, input, output):
             PytorchLowMemoryImplementation().m_step,
             PytorchLowMemoryImplementation().input,
             PytorchLowMemoryImplementation().output,
+        ),
+        (
+            PytorchLogImplementation().m_step,
+            PytorchLogImplementation().input,
+            PytorchLogImplementation().output,
         ),
     ],
 )
@@ -221,6 +237,11 @@ def test_m_step(m_step, input, output):
             PytorchLowMemoryImplementation().log_likelihood,
             PytorchLowMemoryImplementation().input,
             PytorchLowMemoryImplementation().output,
+        ),
+        (
+            PytorchLogImplementation().log_likelihood,
+            PytorchLogImplementation().input,
+            PytorchLogImplementation().output,
         ),
     ],
 )
