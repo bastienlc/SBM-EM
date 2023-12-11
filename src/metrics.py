@@ -5,15 +5,6 @@ import numpy as np
 
 # Supervised metrics
 
-def metrics_from_ground_truth(gt, pred):
-    report = dict()
-    report['Rand index'] = metrics.rand_score(gt, pred)
-    report['AMI'] = metrics.adjusted_mutual_info_score(gt, pred)
-    report['V measure'] = metrics.v_measure_score(gt, pred)
-    report['Fowlkes-Mallows'] = metrics.fowlkes_mallows_score(gt, pred)
-    return report
-
-
 def rand_index(gt, pred):
     """ Measures similarity between two clusterings by comparing
     the number of pairs of elements that are assigned in the same or in different clusters,
@@ -85,3 +76,39 @@ def slow_SBM_clustering_coefficient(alpha, pi):
                 sum_2 += prod_2
                 sum_1 += prod_2 * pi[l, m]
     return sum_1 / sum_2
+
+
+def intra_cluster_density(X, cluster, weighted=False):
+    """ cluster is the list of indices of nodes in the considered cluster """
+    if weighted:
+        nb_internal_edges = np.sum(X[np.ix_(cluster, cluster)])/2
+    else:
+        nb_internal_edges = np.sum(X[np.ix_(cluster, cluster)]>0)/2
+    nb_nodes = cluster.shape[0]
+    return nb_internal_edges / (nb_nodes * (nb_nodes-1) / 2)
+
+
+def inter_cluster_density(X, cluster, weighted=False):
+    """ cluster is the list of indices of nodes in the considered cluster """
+    n = X.shape[0]
+    inter_X = X.copy()
+    inter_X[np.ix_(cluster, cluster)] = 0
+    if weighted:
+        nb_external_edges = np.sum(inter_X)
+    else:
+        nb_external_edges = np.sum(inter_X[cluster] > 0)
+    nb_nodes = cluster.shape[0]
+    return nb_external_edges / (nb_nodes * (n-nb_nodes))
+
+
+def conductance(X, cluster):
+    """ A good cluster should have low conductance, especially compared to the lowest conductance on the graph.
+    cluster is the list of indices of nodes in the considered cluster """
+    a = np.sum(X[cluster])
+    anti_cluster_mask = np.ones(X.shape[0], dtype=bool)
+    anti_cluster_mask[cluster] = False
+    b = np.sum(X) - np.sum(X[anti_cluster_mask])
+    return inter_cluster_density(X, cluster) / min(a, b)
+
+def modularity(X, cluster):
+    raise NotImplementedError("TODO")
