@@ -1,20 +1,19 @@
 import numpy as np
 
 
-
 def internal_degree(X, community):
     return np.sum(X[community, :][:, community])
 
 
 def external_degree(X, community):
-    return np.sum(X[community, :][:,np.logical_not(community)])
+    return np.sum(X[community, :][:, np.logical_not(community)])
 
 
 def fitness(X, community, alpha=1):
-    """ cluster is a mask indicating what nodes are in the considered cluster """
+    """cluster is a mask indicating what nodes are in the considered cluster"""
     k_in = internal_degree(X, community)
     k_out = external_degree(X, community)
-    return k_in/((k_in + k_out)**alpha)
+    return k_in / ((k_in + k_out) ** alpha)
 
 
 def node_fitness(X, community, node, alpha=1):
@@ -33,7 +32,7 @@ def update_neighbors(X, community, neighbors, node):
             neighbors.add(neighbor)
 
 
-def grow_community(X, community, neighbors, alpha=1.):
+def grow_community(X, community, neighbors, alpha=1.0):
     """Grow the community, adding the neighbor of maximal fitness. Returns False if no neighbor has a positive fitness.
     Args:
         X (np.array): adjacency matrix of the graph
@@ -54,8 +53,8 @@ def grow_community(X, community, neighbors, alpha=1.):
     return True
 
 
-def clean_community(X, community, alpha=1.):
-    """ Remove nodes that have a negative fitness from the community. """
+def clean_community(X, community, alpha=1.0):
+    """Remove nodes that have a negative fitness from the community."""
     exit = False
     while not exit:
         exit = True
@@ -65,8 +64,8 @@ def clean_community(X, community, alpha=1.):
                 exit = False
 
 
-def natural_community(X, node, alpha=1.):
-    """ Compute the natural community of a node, starting from the isolated node and growing it iteratively with neighbors of maximal fitness. """
+def natural_community(X, node, alpha=1.0):
+    """Compute the natural community of a node, starting from the isolated node and growing it iteratively with neighbors of maximal fitness."""
     community = np.zeros(X.shape[0], dtype=bool)
     community[node] = True
     neighbors = set()
@@ -78,9 +77,8 @@ def natural_community(X, node, alpha=1.):
     return community
 
 
-def lfk(X, alpha=1.):
-    """ Apply Lancichinetti-Fortunato-Kertész clustering algorithm to the graph X.
-    """
+def lfk(X, alpha=1.0):
+    """Apply Lancichinetti-Fortunato-Kertész clustering algorithm to the graph X."""
     assigned_nodes = np.zeros(X.shape[0], dtype=bool)
     communities = []
     while not assigned_nodes.all():
