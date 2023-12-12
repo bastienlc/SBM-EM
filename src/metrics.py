@@ -64,51 +64,81 @@ def normalized_mutual_information(gt, pred, Q=None):
 def SBM_clustering_coefficient(alpha, pi):
     return np.einsum("q, l, m, ql, qm, lm ->", alpha, alpha, alpha, pi, pi, pi)/np.einsum("q, l, m, ql, qm ->", alpha, alpha, alpha, pi, pi)
     
-    
-def slow_SBM_clustering_coefficient(alpha, pi):
-    Q = alpha.shape[0]
-    sum_1 = 0
-    sum_2 = 0
-    for q in range(Q):
-        for l in range(Q):
-            for m in range(Q):
-                prod_2 = alpha[q] * alpha[l] * alpha[m] * pi[q, l] * pi[q, m]
-                sum_2 += prod_2
-                sum_1 += prod_2 * pi[l, m]
-    return sum_1 / sum_2
-
 
 def intra_cluster_density(X, cluster, weighted=False):
-    """ cluster is the list of indices of nodes in the considered cluster """
+    """ cluster is the mask indicating which nodes are in the considered cluster """
     if weighted:
-        nb_internal_edges = np.sum(X[np.ix_(cluster, cluster)])/2
+        nb_internal_edges = np.sum(X[cluster,:][:,cluster])/2
     else:
-        nb_internal_edges = np.sum(X[np.ix_(cluster, cluster)]>0)/2
-    nb_nodes = cluster.shape[0]
+        nb_internal_edges = np.sum(X[cluster,:][:,cluster]>0)/2
+    nb_nodes = np.sum(cluster)
     return nb_internal_edges / (nb_nodes * (nb_nodes-1) / 2)
 
 
 def inter_cluster_density(X, cluster, weighted=False):
-    """ cluster is the list of indices of nodes in the considered cluster """
-    n = X.shape[0]
-    inter_X = X.copy()
-    inter_X[np.ix_(cluster, cluster)] = 0
+    """ cluster is the mask indicating which nodes are in the considered cluster """
     if weighted:
-        nb_external_edges = np.sum(inter_X)
+        nb_external_edges = np.sum(X[cluster,:][:, np.logical_not(cluster)])
     else:
-        nb_external_edges = np.sum(inter_X[cluster] > 0)
-    nb_nodes = cluster.shape[0]
+        nb_external_edges = np.sum(X[cluster,:][:,np.logical_not(cluster)] > 0)
+    n = X.shape[0]
+    nb_nodes = np.sum(cluster)
     return nb_external_edges / (nb_nodes * (n-nb_nodes))
 
 
 def conductance(X, cluster):
     """ A good cluster should have low conductance, especially compared to the lowest conductance on the graph.
-    cluster is the list of indices of nodes in the considered cluster """
+    cluster is the list of indices of nodes in the considered cluster.
+    """
     a = np.sum(X[cluster])
-    anti_cluster_mask = np.ones(X.shape[0], dtype=bool)
-    anti_cluster_mask[cluster] = False
-    b = np.sum(X) - np.sum(X[anti_cluster_mask])
+    b = np.sum(X) - np.sum(X[np.logical_not(cluster)])
     return inter_cluster_density(X, cluster) / min(a, b)
 
-def modularity(X, cluster):
-    raise NotImplementedError("TODO")
+
+def modularity_simple(X, clustering):
+    """ The modularity of a clustering compares the observed connectivity within clusters to
+    its expected value for a random graph with the same degree distribution.
+    Implemented as presented by M. E. J. Newman and M. Girvan in https://arxiv.org/abs/cond-mat/0308217.
+    """
+    m = (X.trace() + np.sum(X))/2
+    c = clustering.shape[0]
+    e = np.zeros((c, c))
+    for i in range(c):
+        e[i, i] = np.sum(X[clustering[i], :][:, clustering[i]])/2
+    for i in range(c):
+        for j in range(i+1, c):
+            e[i, j] = np.sum(X[clustering[i], :][:, clustering[j]])
+            e[j, i] = e[i, j]
+    e /= m
+    return e.trace() - np.sum(e @ e)
+
+
+def modularity(X, clustering):
+    """ The modularity of a clustering compares the observed connectivity within clusters to
+    its expected value for a random graph with the same degree distribution.
+    We here make the common assumption that the random graph resulting from the configuration model contains no self-loops and no multiple edges.
+    Implemented as presented in matrix form by M. E. J. Newman in https://arxiv.org/abs/physics/0602124
+    """
+    m = (X.trace() + np.sum(X))/2
+    S = np.transpose(clustering).astype(int)
+    degrees = np.sum(X, axis=1)
+    B = X - (degrees[:, None] @ degrees[None, :]/(2*m))
+    return 1/(2*m) * np.trace(S.T @ B @ S)
+
+
+def modularity_v2(X, clustering):
+    """ The modularity of a clustering compares the observed connectivity within clusters to
+    its expected value for a random graph with the same degree distribution.
+    We here make the common assumption that the random graph resulting from the configuration model contains no self-loops and no multiple edges.
+    Implemented as presented by B.H.Good, Y.A. de Montjoye and A. Clauset in https://arxiv.org/abs/0910.0165.pdf.
+    """
+    m = (X.trace() + np.sum(X))/2
+    c = clustering.shape[0]
+    e = np.zeros(c)
+    d = np.zeros(c)
+    for i in range(c):
+        e[i] = np.sum(X[clustering[i], :][:, clustering[i]])/2
+        d[i] = np.sum(X[clustering[i], :])
+    e /= m
+    d /= 2*m
+    return np.sum(e - d**2)
