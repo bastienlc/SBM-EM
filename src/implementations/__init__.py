@@ -8,6 +8,7 @@ from .pytorch import (
     PytorchLogImplementation,
     PytorchLowMemoryImplementation,
 )
+from src.Newman_EM.implementations.newman_torch import Newman_pytorch_implementation
 
 IMPLEMENTATIONS: Dict[str, GenericImplementation] = {
     "numpy": NumpyImplementation(),
@@ -15,4 +16,5 @@ IMPLEMENTATIONS: Dict[str, GenericImplementation] = {
     "pytorch": PytorchImplementation(),
     "pytorch_low_memory": PytorchLowMemoryImplementation(),
     "pytorch_log": PytorchLogImplementation(),
+    "newman_pytorch": Newman_pytorch_implementation(),
 }
