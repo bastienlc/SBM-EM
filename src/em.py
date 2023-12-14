@@ -6,7 +6,7 @@ from .utils import drop_init, sort_parameters
 
 
 def em_algorithm(
-    X, Q, n_init=10, iterations=100, implementation="pytorch", verbose=True
+    X, Q, n_init=10, iterations=100, implementation="pytorch_log", verbose=True
 ):
     implementation = IMPLEMENTATIONS[implementation]
     if n_init >= iterations:
@@ -29,8 +29,8 @@ def em_algorithm(
             # Coherence checks
             if not implementation.parameters_are_ok(alpha, pi, tau[k]):
                 raise ValueError("Parameters are not ok")
-            # if previous_ll[k] - PRECISION > ll:
-            #     raise ValueError("Log likelihood is decreasing")
+            if previous_ll[k] - PRECISION > ll:
+                raise ValueError("Log likelihood is decreasing")
 
             previous_ll[k] = ll
         if verbose:
@@ -55,26 +55,3 @@ def em_algorithm(
         implementation.output(best_pi),
         implementation.output(best_tau),
     )
-
-
-
-# def algo_em_newman(X, Q, max_iter = 100):
-#     # init q randomly
-
-#     implementation = IMPLEMENTATIONS["newman_pytorch"]
-#     X = implementation.input(X)
-#     n = X.shape[0]
-#     tau = implementation.init_tau(n, Q)
-
-#     previous_log_likelihood, curr_log_likelihood = None, None
-#     for i in range(max_iter):
-#         # print(q)
-#         pi, theta = implementation.m_step(X, tau)
-#         tau = implementation.e_step(X, pi, theta)
-#         previous_log_likelihood = curr_log_likelihood
-#         curr_log_likelihood = implementation.output(implementation.log_likelihood(X, pi, theta, tau))
-#         if previous_log_likelihood is not None and curr_log_likelihood - previous_log_likelihood < 1e-5:
-#             break
-
-#         print(f'iter {i} log_likelihood {curr_log_likelihood}')
-#     return tau, pi, theta
