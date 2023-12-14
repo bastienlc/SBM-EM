@@ -60,13 +60,15 @@ class PythonImplementation(GenericImplementation):
                 break
         return tau
 
-    def log_likelihood(self, X, alpha, pi, tau):
+    def log_likelihood(self, X, alpha, pi, tau, elbo=True):
         n = X.shape[0]
         Q = alpha.shape[0]
         ll = 0
         for i in range(n):
             for q in range(Q):
-                ll += tau[i, q] * np.log(alpha[q]) - tau[i, q] * np.log(tau[i, q])
+                ll += tau[i, q] * np.log(alpha[q])
+                if elbo:
+                    ll -= tau[i, q] * np.log(tau[i, q])
                 for j in range(n):
                     if i != j:
                         for l in range(Q):

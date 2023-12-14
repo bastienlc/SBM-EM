@@ -1,5 +1,5 @@
 import torch
- 
+
 from ..constants import *
 from .generic import GenericImplementation
 
@@ -92,12 +92,18 @@ class PytorchImplementation(GenericImplementation):
         return tau
 
     def log_likelihood(
-        self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
+        self,
+        X: torch.Tensor,
+        alpha: torch.Tensor,
+        pi: torch.Tensor,
+        tau: torch.Tensor,
+        elbo: bool = True,
     ):
         n = X.shape[0]
         ll = 0
         ll += torch.sum(tau * torch.log(alpha).expand(n, -1), dim=[0, 1])
-        ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
+        if elbo:
+            ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
         b_values = self._compute_b(X, pi)
         log_b_values = torch.log(b_values)
         ll += 1 / 2 * torch.einsum("iq,jl,iqjl->", tau, tau, log_b_values)
