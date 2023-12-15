@@ -12,7 +12,9 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \usepackage{xcolor}
-
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+\usetikzlibrary{arrows}
 
 % Definitions of handy macros can go here
 \newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
@@ -98,13 +100,43 @@ Community detection is an NP-hard problem, as testing all possible partitions of
 
 
 \section{Proposed method}
-\label{sec:method}
 
-\cite{main_article}
+In "A mixture model for random graphs" \cite{main_article}, the authors propose a bayesian model for graphs, and an Expectation-Maximization approach to fit this model to a given graph.
 
 \subsection{A mixture model for random graphs}
 
-[Introduire le modèle]
+We will follow the same notation as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
+
+We consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the appartenance of node $i$ to class $q$. We have the following prior distribution on $Z$:
+\begin{equation}
+    \forall i\in \left\{1,\dots,n\right\}, \quad \sum_{q=1}^Q Z_{iq} = 1 \quad \text{and} \quad \forall q\in \left\{1,\dots,Q\right\},\quad \mathbb{P}(Z_{iq}=1)=\alpha_q
+\end{equation}
+
+We introduce priors on the existence of edges between nodes of different classes. We denote $\pi_{ql}$ the probability of an edge between a node of class $q$ and a node of class $l$. Because the graph is undirected, we have $\pi_{ql}=\pi_{lq}$. Finally we suppose the following prior distribution on the existence of edges between nodes :
+\begin{equation}
+    \forall q,l\in \left\{1,\dots,Q\right\}, \quad \forall i\neq j\in \left\{1,\dots,n\right\}, \quad \mathbb{P}(X_{ij}=1|Z_{iq}=1,Z_{jl}=1)=\pi_{ql}
+\end{equation}
+
+Figure \ref{fig:graphical_model} shows the graphical model of this mixture model.
+
+\begin{figure}[H]
+    \centering
+    \label{fig:graphical_model}
+    \tikz{
+        \node[obs] (X_{ij}) {$X_{ij}$};
+        \node[latent,left=of X_{ij}, xshift=-1cm, label={[name=label1,text height=1.2em]below:$i=1,\dots,n$}] (Z_i) {$Z_i$};
+        \node[latent,right=of X_{ij}, xshift=1cm, label={[name=label2,text height=1.2em]below:$j=i+1,\dots,n$}] (Z_j) {$Z_j$};
+        \node[const, above=of X_{ij}](alpha){$\alpha$};
+        \node[const, below=of X_{ij}, yshift=-1cm](pi){$\pi$};
+        \plate [inner sep=.5cm] {} {(Z_i)(X_{ij})(Z_j)(label1)(label2)} {};
+        \plate [inner sep=.25cm] {} {(Z_j)(X_{ij})(label2)} {};
+        \edge {Z_i,Z_j} {X_{ij}}
+        \edge {alpha} {Z_i}
+        \edge {alpha} {Z_j}
+        \edge {pi} {X_{ij}}
+    }
+    \caption{Graphical model of the mixture model}
+\end{figure}
 
 
 \subsection{Variational Expectation-Maximization algorithm}
