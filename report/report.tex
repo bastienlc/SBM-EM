@@ -29,6 +29,7 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\minimize}{minimize}
+\DeclareMathOperator*{\KL}{KL}
 \newcommand{\intset}[2]{\{#1, ..., #2\}}
 \newcommand{\mnbs}{\nobreak\hspace{.16667em}}
 
@@ -105,7 +106,7 @@ In "A mixture model for random graphs" \cite{main_article}, the authors propose 
 
 \subsection{A mixture model for random graphs}
 
-We will follow the same notation as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
+We will follow the same notations as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
 
 We consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the appartenance of node $i$ to class $q$. We have the following prior distribution on $Z$:
 \begin{equation}
@@ -141,7 +142,39 @@ Figure \ref{fig:graphical_model} shows the graphical model of this mixture model
 
 \subsection{Variational Expectation-Maximization algorithm}
 
-[Présenter le VEM avec la méthode de point fixe]
+The log-likelihood of the model is given by :
+\begin{equation}
+    \log \mathcal{L}(X, Z) = \sum_{i}\sum_{q} Z_{iq}\log\alpha_q + \frac{1}{2}\sum_{i\neq j}\sum_{q,l} Z_{iq}Z_{jl} \times \pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}
+\end{equation}
+
+Because the likelihood $\mathcal{L}(X)$ is not tractable, the authors propose to use an EM algorithm to fit the model. However the E-step is not tractable either because of the posterior distribution of $Z$ given $X$. Instead the authors propose to optimize (\ref{eq:lower_bound}) which is a lower bound of $\log\mathcal{L}(X)$ obtained using the Kullback-Leibler divergence between the posterior distribution of $Z$ given $X$ and an approximated distribution $R_X$.
+
+\begin{equation}
+    \label{eq:lower_bound}
+    \mathcal{J}(R_X)=\log \mathcal{L}(X)-\KL[R_X(\cdot), P(\cdot|X)]
+\end{equation}
+
+By choosing the approximated distribution $R_X$ to be a product of independant multinomial distributions (\ref{eq:approximated_distribution}), the authors obtain a fixed point relation between the parameters of the model and the parameters of the approximated distribution maximizing the lower bound $\mathcal{J}(R_X)$ (\ref{eq:fixed_point}). This fixed point relation is used in the E-step of the algorithm.
+
+\begin{equation}
+    \label{eq:approximated_distribution}
+    R_X(Z)=\prod_{i=1}^n h(Z_i, \tau_i) \quad\quad \forall i \in \left\{1,\dots,n\right\}, h(Z_i, \tau_i)=\prod_{q=1}^Q \tau_{iq}^{Z_{iq}}
+\end{equation}
+
+\begin{equation}
+    \label{eq:fixed_point}
+    \forall i \in \left\{1,\dots,n\right\}, \forall q \in \left\{1,\dots,Q\right\}, \hat{\tau}_{iq}\propto \alpha_q \prod_{j\neq i}\prod_l \left[\pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}\right]^{\hat{\tau}_{jl}}
+\end{equation}
+
+This fixed point relation doesn't assure the theoretical convergence of the algorithm. We will see later that the convergence of the algorithm is not guaranteed in practice either. Finally we have the following updates for the M-step maximizing $\mathcal{J}(R_X)$ :
+
+\begin{equation}
+    \label{eq:m_step}
+    \forall q, l \in \left\{1,\dots,Q\right\}, \quad
+    \hat{\alpha}_q=\frac{1}{n}\sum_{i} \hat{\tau}_{iq}
+    \quad
+    \hat{\pi}_{ql}=\frac{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}X_{ij}}{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}}
+\end{equation}
 
 
 \subsection{A variant}
