@@ -57,13 +57,14 @@ class NumpyImplementation(GenericImplementation):
                 break
         return tau
 
-    def log_likelihood(self, X, alpha, pi, tau):
+    def log_likelihood(self, X, alpha, pi, tau, elbo=True):
         n = X.shape[0]
         ll = 0
         ll += np.sum(
             tau * np.repeat(np.log(alpha)[np.newaxis, :], n, axis=0), axis=(0, 1)
         )
-        ll -= np.sum(tau * np.log(tau), axis=(0, 1))
+        if elbo:
+            ll -= np.sum(tau * np.log(tau), axis=(0, 1))
         b_values = self._compute_b(X, pi)
         log_b_values = np.log(b_values)
         ll += 1 / 2 * np.einsum("iq,jl,iqjl->", tau, tau, log_b_values)
