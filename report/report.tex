@@ -1,101 +1,238 @@
-\documentclass[12pt]{article}
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
 
-\input{includes.tex}
+% Any additional packages needed should be included after jmlr2e.
+% Note that jmlr2e.sty includes epsfig, amssymb, natbib and graphicx,
+% and defines many common macros, such as 'proof' and 'example'.
+
+\usepackage{jmlr2e}
+\usepackage[a4paper, right=3cm, left=3cm, bottom=3cm, top=3cm]{geometry}
+\usepackage{amsmath, mathtools}
+\usepackage{booktabs}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+\usetikzlibrary{arrows}
+
+% Definitions of handy macros can go here
+\newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+\newcommand{\prob}{\mathbb{P}} 
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\O}{\mathcal{O}}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\dd}{\, \mathrm{d}}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\minimize}{minimize}
+\DeclareMathOperator*{\KL}{KL}
+\newcommand{\intset}[2]{\{#1, ..., #2\}}
+\newcommand{\mnbs}{\nobreak\hspace{.16667em}}
+
+
+% Heading arguments are {volume}{year}{pages}{submitted}{published}{author-full-names}
+% \jmlrheading{}{}{}{}{}{Bastien LE CHENADEC, SOFIANE EZZEHI and THEILO TERRISSE}
+
+% Short headings should be running head and authors last names
+
+\ShortHeadings{Mixture Models for Community Detection}{B. LE CHENADEC, S. EZZEHI and T. TERRISSE}
+\firstpageno{1}
 
 \begin{document}
-\pagenumbering{arabic}
-\setlength{\headheight}{15pt}
 
-\section{Ce que j'ai compris}
+\title{Mixture Models for Community Detection}
 
-Un modèle de graphes  aléatoires qui à la fois :
-\begin{itemize}
-    \item est un modèle de mélange
-    \item décrit explicitement les liens entre les noeuds
-\end{itemize}
+\author{\name Bastien Le Chenadec \email bastien.le-chenadec@eleves.enpc.fr \\
+    \addr Ecole des Ponts Paristech
+    \AND
+    \name Sofiane Ezzehi \email sofiane.ezzehi@eleves.enpc.fr \\
+    \addr Ecole des Ponts Paristech
+    \AND
+    \name Theïlo Terrisse \email theilo.terrisse@eleves.enpc.fr \\
+    \addr Ecole des Ponts Paristech
+}
 
-\paragraph{Notations :}
-\begin{itemize}
-    \item $X_{ij}\in \{0,1\}$ l'existence d'une arête entre les noeuds $i$ et $j$.
-    \item $Q$ le nombre de classes, avec $\{\alpha_1, \dots, \alpha_Q\}$ les proportions de chaque classe.
-    \item $Z_{iq} \in \{0,1\}$ l'appartenance du noeud $i$ à la classe $q$.
-    \item $\pi_{ql}=\pi_{lq}$ la probabilité d'un lien entre un noeud de la classe $q$ et un noeud de la classe $l$.
-\end{itemize}
+\maketitle
 
-\paragraph{Hypothèses :}
-\begin{itemize}
-    \item Bonne définition des classes : $\sum_q Z_{iq}=1$, $\sum_q \alpha_q=1$ et $\alpha_q=P(Z_{iq}=1)$.
-    \item Pas de self loop : $X_{ii}=0$
-    \item Indépendances des arêtes conditionnellement aux classes : $X_{ij}| \{i\in q, j\in l\} \sim \mathcal{B}(\pi_{ql})$.
-\end{itemize}
+\textcolor{red}{Quelques remarques:
+    \begin{itemize}
+        \item hésitez pas à utiliser Zotero pour exporter d'éventuelles références bibliographiques, histoire d'avoir un remplissage uniforme e de gagner du temps
+        \item Une fois une abbréviation introduite (ex: SBM), si possible toujours utiliser l'abbréviation et ne pas ré-écrire l'expression entière
+        \item Je propose de préférer le terme de "cluster" à "community". (Il faudra que je change ce que j'ai écrit du coup)
+    \end{itemize}
+}
 
-\paragraph{Propriétés importantes :}
-\begin{itemize}
-    \item Distribution des degrés binomiale (conditionnellement aux classes).
-\end{itemize}
+\begin{contribstatement}
+    TODO
+\end{contribstatement}
 
-\vspace{5mm}
+% \begin{keywords}
+%   Mixture Models, Graph Clustering, Community Detection, EM algorithm
+% \end{keywords}
 
-Extension : modèle indépendant, chaque classe a une propension à se lier avec les autres classes. On a alors $\pi_{ql}=\eta_q\eta_l$.
+\section{Introduction}
 
-Log-vraissemblance du modèle (est-ce que le modèle observé est probable au vu des paramètres fixés ?) :
-$$\log \mathcal{L}(X, Z) = \sum_i\sum_qZ_{iq}\log \alpha_q + \frac{1}{2} \sum_{i\neq j}\sum_{q,l}Z_{iq}Z_{jl}\log b(X_{ij,\pi_{ql}})$$
-avec $b(x,\pi)=\pi^x(1-\pi)^{1-x}$.
+Community detection is the problem of revealing communities within a graph, also referred to as ``graph clustering'' \cite{fortunato_community_2010}, where a community within a graph is often defined as a set of nodes that are more densely connected between them than with the rest of the network.
+Among existing methods to tackle this problem, model-based methods fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph maybe extracted or computed. The Stochastic Block Model (SBM) is a renowned example of graph modelling. In \cite{main_article}, J.-J. Daudin \textit{et al.} explore this model from a frequentist point of view and propose a variational EM algorithm to fit this model. In this report, we quickly review some literature on community detection in Section \ref{sec:context}. In Section \ref{sec:method}, we detail the method introduced in \cite{main_article} as well as a variant from the literature and discuss the problem of overlapping communities. In Sections \ref{sec:experiments} and \ref{sec:discussion}, our experiments are presented and discussed. Lastly, we conclude in Section \ref{sec:conclusion}.
 
-Estimation : on veut estimer les paramètres du modèle en maximisant la log-vraisemblance. L'algorithme EM n'est pas utilisable ici. Le papier se concentre sur l'optimisation d'une borne inférieure de la log-vraisemblance, de façon similaire à l'algorithme EM.
-
-\begin{itemize}
-    \item Étape E : on calcule les paramètres optimaux $\hat{\tau}_{iq}$ de la distribution conditionnelle approchée (point fixe).
-    \item Étape M : on maximise la log-vraisemblance approchée par rapport aux paramètres du modèle.
-\end{itemize}
-On note que :
-\begin{itemize}
-    \item On a une garantie de croissance de la log-vraisemblance approchée à chaque itération.
-    \item Le nombre de classes est fixé à l'avance. Le papier propose un critère de sélection du nombre de classes.
-\end{itemize}
+\section{Context and Related Work}
+\label{sec:context}
 
 
-\section{Questions}
+\subsection{What is Community Detection?}
 
-Rentrer dans le détail des preuves ?
+Community Detection has tremendous applications in the study of real networks such as social \cite{chunaev_community_2020} or biological \cite{sah_exploring_2014} networks. This problem is of importance to perform a mesoscopic study of graphs, where communities can be interpreted as meta-nodes that reveal new interactions associated to possibly interpretable functions within a complex system represented as a graph.
 
-\section{Objectifs}
+Although the definition of a ``community'' remains somewhat sloppy in the literature, a common definition describes it as a group of nodes with an internal density (defined as the ratio of edges between nodes of the group that are actually present over the number of such possible edges) that is larger than its inter-community density (similarly defined, but between nodes of the group and nodes outside the group). This definition is actually specific to homophilious communities, which we will focus on, while heterophily would take an opposite definition.
 
-\begin{itemize}
-    \item Implémenter l'algorithme d'estimation.
-    \item Tester l'implémentation sur le même dataset que le papier.
-    \item Trouver des datasets pertinents sur lesquels tester l'algorithme.
-    \item Proposer une méthode d'estimation alternative (idées, preuves, implémentation)
-    \item Investiguer la pertinence du critère de sélection du nombre de classes. Implémenter d'autres critères, montrer leur pertinence en fonction du type de tâche.
-    \item Étudier le sampling après estimation : est-ce que le modèle est capable de générer des graphes similaires à ceux du dataset ?
-\end{itemize}
+\subsection{Common community detection approaches}
 
-\section{Ce qui sera simple}
+Community detection is an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(2^n)$ with $n$ the number of nodes. Instead, common approaches [...]
 
-\begin{itemize}
-    \item Sampler un graphe aléatoire avec des paramètres fixés.
-    \item Implémenter l'algorithme d'estimation.
-\end{itemize}
+    [Mention types of methods, but focus on model-based approaches]
 
-\section{Ce qui sera difficile}
+\subsection{A word on overlapping community detection approaches}
 
-\begin{itemize}
-    \item Faire tourner l'algorithme efficacement.
-    \item Trouver des méthodes d'estimation alternatives qui s'appliquent.
-\end{itemize}
 
-\section{Idées, critiques}
 
-Comparaison avec d'autres modèles ?
 
-\section{Implémentation}
+\section{Proposed method}
 
-\subparagraph*{E-step :}
+In "A mixture model for random graphs" \cite{main_article}, the authors propose a bayesian model for graphs, and an Expectation-Maximization approach to fit this model to a given graph.
 
-On a :
+\subsection{A mixture model for random graphs}
+
+We will follow the same notations as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
+
+We consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the appartenance of node $i$ to class $q$. We have the following prior distribution on $Z$:
 \begin{equation}
-    \hat{\tau}_{iq} \propto \alpha_q\prod_{j\neq i}\prod_lb(X_{ij};\pi_{ql})^{\hat{\tau}_{jl}}
+    \forall i\in \left\{1,\dots,n\right\}, \quad \sum_{q=1}^Q Z_{iq} = 1 \quad \text{and} \quad \forall q\in \left\{1,\dots,Q\right\},\quad \mathbb{P}(Z_{iq}=1)=\alpha_q
 \end{equation}
 
+We introduce priors on the existence of edges between nodes of different classes. We denote $\pi_{ql}$ the probability of an edge between a node of class $q$ and a node of class $l$. Because the graph is undirected, we have $\pi_{ql}=\pi_{lq}$. Finally we suppose the following prior distribution on the existence of edges between nodes :
+\begin{equation}
+    \forall q,l\in \left\{1,\dots,Q\right\}, \quad \forall i\neq j\in \left\{1,\dots,n\right\}, \quad \mathbb{P}(X_{ij}=1|Z_{iq}=1,Z_{jl}=1)=\pi_{ql}
+\end{equation}
+
+Figure \ref{fig:graphical_model} shows the graphical model of this mixture model.
+
+\begin{figure}[H]
+    \centering
+    \label{fig:graphical_model}
+    \tikz{
+        \node[obs] (X_{ij}) {$X_{ij}$};
+        \node[latent,left=of X_{ij}, xshift=-1cm, label={[name=label1,text height=1.2em]below:$i=1,\dots,n$}] (Z_i) {$Z_i$};
+        \node[latent,right=of X_{ij}, xshift=1cm, label={[name=label2,text height=1.2em]below:$j=i+1,\dots,n$}] (Z_j) {$Z_j$};
+        \node[const, above=of X_{ij}](alpha){$\alpha$};
+        \node[const, below=of X_{ij}, yshift=-1cm](pi){$\pi$};
+        \plate [inner sep=.5cm] {} {(Z_i)(X_{ij})(Z_j)(label1)(label2)} {};
+        \plate [inner sep=.25cm] {} {(Z_j)(X_{ij})(label2)} {};
+        \edge {Z_i,Z_j} {X_{ij}}
+        \edge {alpha} {Z_i}
+        \edge {alpha} {Z_j}
+        \edge {pi} {X_{ij}}
+    }
+    \caption{Graphical model of the mixture model}
+\end{figure}
+
+
+\subsection{Variational Expectation-Maximization algorithm}
+
+The log-likelihood of the model is given by :
+\begin{equation}
+    \log \mathcal{L}(X, Z) = \sum_{i}\sum_{q} Z_{iq}\log\alpha_q + \frac{1}{2}\sum_{i\neq j}\sum_{q,l} Z_{iq}Z_{jl} \times \pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}
+\end{equation}
+
+Because the likelihood $\mathcal{L}(X)$ is not tractable, the authors propose to use an EM algorithm to fit the model. However the E-step is not tractable either because of the posterior distribution of $Z$ given $X$. Instead the authors propose to optimize (\ref{eq:lower_bound}) which is a lower bound of $\log\mathcal{L}(X)$ obtained using the Kullback-Leibler divergence between the posterior distribution of $Z$ given $X$ and an approximated distribution $R_X$.
+
+\begin{equation}
+    \label{eq:lower_bound}
+    \mathcal{J}(R_X)=\log \mathcal{L}(X)-\KL[R_X(\cdot), P(\cdot|X)]
+\end{equation}
+
+By choosing the approximated distribution $R_X$ to be a product of independant multinomial distributions (\ref{eq:approximated_distribution}), the authors obtain a fixed point relation between the parameters of the model and the parameters of the approximated distribution maximizing the lower bound $\mathcal{J}(R_X)$ (\ref{eq:fixed_point}). This fixed point relation is used in the E-step of the algorithm.
+
+\begin{equation}
+    \label{eq:approximated_distribution}
+    R_X(Z)=\prod_{i=1}^n h(Z_i, \tau_i) \quad\quad \forall i \in \left\{1,\dots,n\right\}, h(Z_i, \tau_i)=\prod_{q=1}^Q \tau_{iq}^{Z_{iq}}
+\end{equation}
+
+\begin{equation}
+    \label{eq:fixed_point}
+    \forall i \in \left\{1,\dots,n\right\}, \forall q \in \left\{1,\dots,Q\right\}, \hat{\tau}_{iq}\propto \alpha_q \prod_{j\neq i}\prod_l \left[\pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}\right]^{\hat{\tau}_{jl}}
+\end{equation}
+
+This fixed point relation doesn't assure the theoretical convergence of the algorithm. We will see later that the convergence of the algorithm is not guaranteed in practice either. Finally we have the following updates for the M-step maximizing $\mathcal{J}(R_X)$ :
+
+\begin{equation}
+    \label{eq:m_step}
+    \forall q, l \in \left\{1,\dots,Q\right\}, \quad
+    \hat{\alpha}_q=\frac{1}{n}\sum_{i} \hat{\tau}_{iq}
+    \quad
+    \hat{\pi}_{ql}=\frac{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}X_{ij}}{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}}
+\end{equation}
+
+
+\subsection{A variant}
+
+[Sofiane: présenter la variante]
+
+
+\subsection{Addressing overlapping clusters}
+
+
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Implementation}
+
+
+\subsection{Testing on SBM datasets}
+
+\subsubsection{Fitting a model}
+
+\subsubsection{Initialization sensitivity}
+
+
+\subsection{Comparison to variants}
+
+\subsubsection{Datasets}
+
+\subsubsection{Evaluation metrics}
+
+\subsubsection{Results}
+
+
+\section{Analysis and discussion}
+\label{sec:discussion}
+
+TODO
+
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+TODO
+
+
+
+% Acknowledgements should go at the end, before appendices and references
+\acks{Est-ce qu'on en met ?}
+
+\newpage
+
+\appendix
+\section{plots}
+
+ [...]
+
+\bibliographystyle{abbrv}
+\bibliography{bibliography}
 
 \end{document}
