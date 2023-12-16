@@ -5,8 +5,18 @@ from .implementations import IMPLEMENTATIONS
 from .utils import drop_init, sort_parameters
 
 
+class DecreasingLogLikelihoodException(Exception):
+    pass
+
+
 def em_algorithm(
-    X, Q, n_init=10, iterations=100, implementation="pytorch_log", verbose=True
+    X,
+    Q,
+    n_init=10,
+    iterations=100,
+    implementation="pytorch_log",
+    verbose=True,
+    diagnostic=False,
 ):
     implementation = IMPLEMENTATIONS[implementation]
     if n_init >= iterations:
@@ -16,6 +26,9 @@ def em_algorithm(
     X = implementation.input(X)
     tau = [implementation.init_tau(n, Q) for _ in range(n_init)]
     previous_ll = [-1e100 for _ in range(n_init)]
+    if diagnostic:
+        assert n_init == 1, "diagnostic mode only works with one initialization"
+        ll_log = np.zeros(iterations)
     # EM algorithm
     for i in range(iterations):
         for k in range(n_init):
@@ -25,12 +38,14 @@ def em_algorithm(
             ll = implementation.output(
                 implementation.log_likelihood(X, alpha, pi, tau[k])
             )
+            if diagnostic:
+                ll_log[i] = ll
 
             # Coherence checks
             if not implementation.parameters_are_ok(alpha, pi, tau[k]):
                 raise ValueError("Parameters are not ok")
             if previous_ll[k] - PRECISION > ll:
-                raise ValueError("Log likelihood is decreasing")
+                raise DecreasingLogLikelihoodException("Log likelihood is decreasing")
 
             previous_ll[k] = ll
         if verbose:
@@ -50,8 +65,11 @@ def em_algorithm(
     best_tau = tau[best_init]
     best_alpha, best_pi = implementation.m_step(X, best_tau)
 
-    return (
-        implementation.output(best_alpha),
-        implementation.output(best_pi),
-        implementation.output(best_tau),
-    )
+    if diagnostic:
+        return ll_log
+    else:
+        return (
+            implementation.output(best_alpha),
+            implementation.output(best_pi),
+            implementation.output(best_tau),
+        )
