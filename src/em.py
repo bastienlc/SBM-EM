@@ -30,7 +30,12 @@ def em_algorithm(
             if not implementation.parameters_are_ok(alpha, pi, tau[k]):
                 raise ValueError("Parameters are not ok")
             if previous_ll[k] - PRECISION > ll:
-                raise ValueError("Log likelihood is decreasing")
+                if ENFORCE_INCREASING_LIKELIHOOD:
+                    raise ValueError(
+                        f"Log likelihood is decreasing of {previous_ll[k] - ll}"
+                    )
+                else:
+                    print(f"\nLog likelihood is decreasing of {previous_ll[k] - ll}")
 
             previous_ll[k] = ll
         if verbose:
@@ -38,7 +43,7 @@ def em_algorithm(
                 f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
                 end="",
             )
-            print("\r", end="", flush=True)
+            print("\r", end="")
 
         # Drop some inits after some time
         if i * n_init > iterations // n_init:

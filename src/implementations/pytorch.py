@@ -79,12 +79,15 @@ class PytorchImplementation(GenericImplementation):
                         f"Fixed points iteration did not converge after {n_inits} initializations."
                     )
                 else:
-                    break
+                    print(
+                        f"Fixed points iteration did not converge after {n_inits} initializations. Restarting."
+                    )
+                    n_inits = 0
             tau = self.init_tau(n, Q)
             n_inits += 1
             for _ in range(MAX_FIXED_POINT_ITERATIONS):
                 previous_tau = tau.clone()
-                tau = self.fixed_point_iteration(tau, X, alpha, pi)
+                tau = 0.9 * tau + 0.1 * self.fixed_point_iteration(tau, X, alpha, pi)
                 norm_change = torch.linalg.norm(previous_tau - tau, ord=1)
 
                 if norm_change < EPSILON:
