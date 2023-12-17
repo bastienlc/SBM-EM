@@ -30,48 +30,53 @@ def em_algorithm(
         assert n_init == 1, "diagnostic mode only works with one initialization"
         ll_log = np.zeros(iterations)
     # EM algorithm
-    for i in range(iterations):
-        init = 0
-        while init < n_init:
-            try:
-                alpha, pi = implementation.m_step(X, tau[init])
-                alpha, pi = sort_parameters(alpha, pi)
-                tau[init] = implementation.e_step(X, alpha, pi)
-                ll = implementation.output(
-                    implementation.log_likelihood(X, alpha, pi, tau[init])
+    try:
+        for i in range(iterations):
+            init = 0
+            while init < n_init:
+                try:
+                    alpha, pi = implementation.m_step(X, tau[init])
+                    alpha, pi = sort_parameters(alpha, pi)
+                    tau[init] = implementation.e_step(X, alpha, pi)
+                    ll = implementation.output(
+                        implementation.log_likelihood(X, alpha, pi, tau[init])
+                    )
+                    if diagnostic:
+                        ll_log[i] = ll
+
+                    # Coherence checks
+                    if not implementation.parameters_are_ok(alpha, pi, tau[init]):
+                        raise ValueError("Parameters are not ok")
+                    if previous_ll[init] - PRECISION > ll:
+                        raise DecreasingLogLikelihoodException(
+                            "Log likelihood is decreasing"
+                        )
+
+                    previous_ll[init] = ll
+                except DecreasingLogLikelihoodException:
+                    n_init -= 1
+                    if n_init == 0:
+                        raise DecreasingLogLikelihoodException(
+                            "All initializations end up with decreasing log likelihood"
+                        )
+                    drop_init(n_init, tau, previous_ll, to_drop=init)
+                    continue
+                init += 1
+
+            if verbose:
+                print(
+                    f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
+                    end="",
                 )
-                if diagnostic:
-                    ll_log[i] = ll
+                print("\r", end="", flush=True)
 
-                # Coherence checks
-                if not implementation.parameters_are_ok(alpha, pi, tau[init]):
-                    raise ValueError("Parameters are not ok")
-                if previous_ll[init] - PRECISION > ll:
-                    raise DecreasingLogLikelihoodException(
-                        "Log likelihood is decreasing"
-                    )
+            # Drop some inits after some time
+            if i * n_init > iterations // n_init:
+                n_init, tau, previous_ll = drop_init(n_init, tau, previous_ll)
+    except KeyboardInterrupt:
+        print(f"EM algorithm interrupted by user after {i}/{iterations} iterations.")
+        pass
 
-                previous_ll[init] = ll
-            except DecreasingLogLikelihoodException:
-                n_init -= 1
-                if n_init == 0:
-                    raise DecreasingLogLikelihoodException(
-                        "All initializations end up with decreasing log likelihood"
-                    )
-                drop_init(n_init, tau, previous_ll, to_drop=init)
-                continue
-            init += 1
-
-        if verbose:
-            print(
-                f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
-                end="",
-            )
-            print("\r", end="", flush=True)
-
-        # Drop some inits after some time
-        if i * n_init > iterations // n_init:
-            n_init, tau, previous_ll = drop_init(n_init, tau, previous_ll)
     if verbose:
         print()
 
