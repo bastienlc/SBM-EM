@@ -64,7 +64,9 @@ class NumpyImplementation(GenericImplementation):
             tau * np.repeat(np.log(alpha)[np.newaxis, :], n, axis=0), axis=(0, 1)
         )
         if elbo:
-            ll -= np.sum(tau * np.log(tau), axis=(0, 1))
+            tau_log = tau * np.log(tau)
+            tau_log = np.nan_to_num(tau_log, nan=0.0)  # Avoid NaN due to log(0)
+            ll -= np.sum(tau_log, axis=(0, 1))
         b_values = self._compute_b(X, pi)
         log_b_values = np.log(b_values)
         ll += 1 / 2 * np.einsum("iq,jl,iqjl->", tau, tau, log_b_values)

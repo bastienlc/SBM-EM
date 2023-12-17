@@ -53,6 +53,7 @@ def write_report(experiment):
             os.path.join(RESULTS_PATH, experiment_path, "report.txt"), "w"
         ) as report:
             report.write(f"Experiment {experiment}\n")
+            report.write(f"Number of graphs passed: {len(nmis)}\n")
             report.write(
                 f"ELBO difference: {np.mean(elbo_diffs)} +/- {np.std(elbo_diffs)}\n"
             )
@@ -64,6 +65,30 @@ def write_report(experiment):
             report.write(
                 f"Pred modularity: {np.mean(pred_modularities)} +/- {np.std(pred_modularities)}\n"
             )
+            report.write("\n")
+
+            report.write("Metrics with best graph:\n")
+            best_graph_elbo = np.argmax(elbo_diffs)
+            report.write(f"Best graph for elbo: {best_graph_elbo}\n")
+            report.write(f"ELBO difference: {elbo_diffs[best_graph_elbo]}\n")
+            best_graph_nmi = np.argmax(nmis)
+            report.write(f"Best graph for NMI: {best_graph_nmi}\n")
+            report.write(f"NMI: {nmis[best_graph_nmi]}\n")
+            best_graph_rand = np.argmax(rands)
+            report.write(f"Best graph for Rand index: {best_graph_rand}\n")
+            report.write(f"Rand index: {rands[best_graph_rand]}\n")
+            best_graph_modularity = np.argmax(
+                np.abs(true_modularities) - np.abs(pred_modularities)
+            )
+            report.write(
+                f"Best graph for absolute difference in modularity: {best_graph_modularity}\n"
+            )
+            report.write(
+                f"True modularity: {true_modularities[best_graph_modularity]}\n"
+            )
+            report.write(
+                f"Pred modularity: {pred_modularities[best_graph_modularity]}\n"
+            )
 
 
 def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytorch"):
@@ -73,11 +98,11 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
         n = params["n"]
         Q = params["Q"]
 
-    elbo_diffs = np.zeros(n_graphs)
-    nmis = np.zeros(n_graphs)
-    rands = np.zeros(n_graphs)
-    true_modularities = np.zeros(n_graphs)
-    pred_modularities = np.zeros(n_graphs)
+    elbo_diffs = []
+    nmis = []
+    rands = []
+    true_modularities = []
+    pred_modularities = []
     for graph_idx in range(n_graphs):
         try:
             if (n_graphs >= 10) and graph_idx % (n_graphs // 10) == 0:
@@ -95,30 +120,39 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
             )
 
             # Fitting quality metrics
-            elbo_diffs[graph_idx] = compare_elbos(
-                X,
-                alpha,
-                pi,
-                Z,
-                alpha_pred,
-                pi_pred,
-                tau_pred,
-                implementation=implementation,
+            elbo_diffs.append(
+                IMPLEMENTATIONS[implementation].output(
+                    compare_elbos(
+                        X,
+                        alpha,
+                        pi,
+                        Z,
+                        alpha_pred,
+                        pi_pred,
+                        tau_pred,
+                        implementation=implementation,
+                    )
+                )
             )
 
             # Clustering quality metrics
             true_labels = np.argmax(Z, axis=1)
             pred_labels = np.argmax(tau_pred, axis=1)
-            nmis[graph_idx] = normalized_mutual_information(true_labels, pred_labels)
-            rands[graph_idx] = rand_index(true_labels, pred_labels)
+            nmis.append(normalized_mutual_information(true_labels, pred_labels))
+            rands.append(rand_index(true_labels, pred_labels))
             true_clustering = np.array([true_labels == q for q in range(Q)])
             pred_clustering = np.array([pred_labels == q for q in range(Q)])
-            true_modularities[graph_idx] = modularity(X, true_clustering)
-            pred_modularities[graph_idx] = modularity(X, pred_clustering)
+            true_modularities.append(modularity(X, true_clustering))
+            pred_modularities.append(modularity(X, pred_clustering))
         except DecreasingLogLikelihoodException:
             print("!! Skipped one graph due to decreasing log likelihood !!")
             continue
 
+    elbo_diffs = np.array(elbo_diffs)
+    nmis = np.array(nmis)
+    rands = np.array(rands)
+    true_modularities = np.array(true_modularities)
+    pred_modularities = np.array(pred_modularities)
     write_results(
         experiment,
         elbo_diffs,

@@ -75,18 +75,41 @@ def graph_from_edge_list(filename):
 def generate_SBM_dataset(experiment=1, n_graphs=100):
     """Refer to the readme file in the data folder for details on the experiments."""
     eps1 = 0.1
-    eps2 = 0.02
+    eps2 = 0.01
+    a = 0.7
+    b = 0.8
+    occupation = 0.5
 
     if experiment == 1:
-        n = 50
+        n = 30
         Q = 3
-        alpha = None  # alpha is variable in this experiment
-        pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
-    if experiment == 2:
-        n = 50
+        alpha = None  # alpha is random in this experiment
+        pi = None  # pi is random in this experiment
+    elif experiment == 2:
+        n = 500
+        Q = 3
+        alpha = None  # alpha is random in this experiment
+        pi = None  # pi is random in this experiment
+    elif experiment == 3:
+        n = 200
         Q = 3
         alpha = np.ones(Q) / Q
         pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
+    elif experiment == 4:
+        n = 200
+        Q = 5
+        alpha = np.ones(Q) / Q
+        pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
+    elif experiment == 5:
+        n = 200
+        Q = 2
+        alpha = np.array([9 / 10, 1 / 10])
+        pi = np.array([[eps1, a], [eps2, b]])
+    elif experiment == 6:
+        n = 200
+        Q = 3
+        alpha = np.ones(Q) / Q
+        pi = (1 - eps1) * np.ones((Q, Q)) + (eps2 - (1 - eps1)) * np.eye(Q)
     else:
         raise ValueError("Invalid experiment number.")
 
@@ -99,8 +122,11 @@ def generate_SBM_dataset(experiment=1, n_graphs=100):
         Q=Q,
     )
     for graph_idx in range(n_graphs):
-        if experiment == 1:  # Experiment 1 is the only one involving a variable alpha
-            alpha = 0.1 + 0.7 * np.random.dirichlet([1.5] * 3)
+        if experiment in [1, 2]:  # Experiments 1 and 2 involve random params
+            alpha = np.random.dirichlet([1.5] * Q)
+            pi = np.random.rand(Q, Q)
+            pi = pi @ np.transpose(pi)
+            pi = pi / np.sum(pi, axis=0) * occupation
         if (n_graphs >= 10) and graph_idx % (n_graphs // 10) == 0:
             print(f"{(100*graph_idx)//n_graphs}% complete...")
         X = np.zeros((n, n))

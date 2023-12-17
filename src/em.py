@@ -31,23 +31,37 @@ def em_algorithm(
         ll_log = np.zeros(iterations)
     # EM algorithm
     for i in range(iterations):
-        for k in range(n_init):
-            alpha, pi = implementation.m_step(X, tau[k])
-            alpha, pi = sort_parameters(alpha, pi)
-            tau[k] = implementation.e_step(X, alpha, pi)
-            ll = implementation.output(
-                implementation.log_likelihood(X, alpha, pi, tau[k])
-            )
-            if diagnostic:
-                ll_log[i] = ll
+        init = 0
+        while init < n_init:
+            try:
+                alpha, pi = implementation.m_step(X, tau[init])
+                alpha, pi = sort_parameters(alpha, pi)
+                tau[init] = implementation.e_step(X, alpha, pi)
+                ll = implementation.output(
+                    implementation.log_likelihood(X, alpha, pi, tau[init])
+                )
+                if diagnostic:
+                    ll_log[i] = ll
 
-            # Coherence checks
-            if not implementation.parameters_are_ok(alpha, pi, tau[k]):
-                raise ValueError("Parameters are not ok")
-            if previous_ll[k] - PRECISION > ll:
-                raise DecreasingLogLikelihoodException("Log likelihood is decreasing")
+                # Coherence checks
+                if not implementation.parameters_are_ok(alpha, pi, tau[init]):
+                    raise ValueError("Parameters are not ok")
+                if previous_ll[init] - PRECISION > ll:
+                    raise DecreasingLogLikelihoodException(
+                        "Log likelihood is decreasing"
+                    )
 
-            previous_ll[k] = ll
+                previous_ll[init] = ll
+            except DecreasingLogLikelihoodException:
+                n_init -= 1
+                if n_init == 0:
+                    raise DecreasingLogLikelihoodException(
+                        "All initializations end up with decreasing log likelihood"
+                    )
+                drop_init(n_init, tau, previous_ll, to_drop=init)
+                continue
+            init += 1
+
         if verbose:
             print(
                 f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
