@@ -54,29 +54,29 @@ def em_algorithm(
 
                     previous_ll[init] = ll
                 except DecreasingLogLikelihoodException:
-                    n_init -= 1
-                    if n_init == 0:
-                        raise DecreasingLogLikelihoodException(
-                            "All initializations end up with decreasing log likelihood"
-                        )
-                    drop_init(n_init, tau, previous_ll, to_drop=init)
-                    continue
+                    if ENFORCE_INCREASING_LIKELIHOOD:
+                        n_init -= 1
+                        if n_init == 0:
+                            raise DecreasingLogLikelihoodException(
+                                "All initializations end up with decreasing log likelihood"
+                            )
+                        drop_init(n_init, tau, previous_ll, to_drop=init)
+
                 init += 1
 
-            if verbose:
-                print(
-                    f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
-                    end="",
-                )
-                print("\r", end="", flush=True)
+        if verbose:
+            print(
+                f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
+                end="",
+            )
+            print("\r", end="")
 
-            # Drop some inits after some time
-            if i * n_init > iterations // n_init:
-                n_init, tau, previous_ll = drop_init(n_init, tau, previous_ll)
+        # Drop some inits after some time
+        if i * n_init > iterations // n_init:
+            n_init, tau, previous_ll = drop_init(n_init, tau, previous_ll)
     except KeyboardInterrupt:
         print(f"EM algorithm interrupted by user after {i}/{iterations} iterations.")
         pass
-
     if verbose:
         print()
 
