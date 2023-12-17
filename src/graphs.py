@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def draw_graph(X, Z):
+def draw_graph(X, Z, tight=False):
     n = X.shape[0]
     G = nx.Graph()
     for i in range(n):
@@ -13,7 +13,7 @@ def draw_graph(X, Z):
             if X[i, j] == 1:
                 G.add_edge(i, j)
     pos = nx.kamada_kawai_layout(G)
-    nx.draw(G, pos, node_color=np.argmax(Z, axis=1))
+    nx.draw(G, pos, node_size=100 if tight else 300, node_color=np.argmax(Z, axis=1))
     plt.show()
 
 

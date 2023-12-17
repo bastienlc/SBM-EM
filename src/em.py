@@ -5,8 +5,18 @@ from .implementations import IMPLEMENTATIONS
 from .utils import drop_init, sort_parameters
 
 
+class DecreasingLogLikelihoodException(Exception):
+    pass
+
+
 def em_algorithm(
-    X, Q, n_init=10, iterations=100, implementation="pytorch_log", verbose=True
+    X,
+    Q,
+    n_init=10,
+    iterations=100,
+    implementation="pytorch_log",
+    verbose=True,
+    diagnostic=False,
 ):
     implementation = IMPLEMENTATIONS[implementation]
     if n_init >= iterations:
@@ -16,28 +26,43 @@ def em_algorithm(
     X = implementation.input(X)
     tau = [implementation.init_tau(n, Q) for _ in range(n_init)]
     previous_ll = [-1e100 for _ in range(n_init)]
+    if diagnostic:
+        assert n_init == 1, "diagnostic mode only works with one initialization"
+        ll_log = np.zeros(iterations)
     # EM algorithm
     for i in range(iterations):
-        for k in range(n_init):
-            alpha, pi = implementation.m_step(X, tau[k])
-            alpha, pi = sort_parameters(alpha, pi)
-            tau[k] = implementation.e_step(X, alpha, pi)
-            ll = implementation.output(
-                implementation.log_likelihood(X, alpha, pi, tau[k])
-            )
+        init = 0
+        while init < n_init:
+            try:
+                alpha, pi = implementation.m_step(X, tau[init])
+                alpha, pi = sort_parameters(alpha, pi)
+                tau[init] = implementation.e_step(X, alpha, pi)
+                ll = implementation.output(
+                    implementation.log_likelihood(X, alpha, pi, tau[init])
+                )
+                if diagnostic:
+                    ll_log[i] = ll
 
-            # Coherence checks
-            if not implementation.parameters_are_ok(alpha, pi, tau[k]):
-                raise ValueError("Parameters are not ok")
-            if previous_ll[k] - PRECISION > ll:
-                if ENFORCE_INCREASING_LIKELIHOOD:
-                    raise ValueError(
-                        f"Log likelihood is decreasing of {previous_ll[k] - ll}"
+                # Coherence checks
+                if not implementation.parameters_are_ok(alpha, pi, tau[init]):
+                    raise ValueError("Parameters are not ok")
+                if previous_ll[init] - PRECISION > ll:
+                    raise DecreasingLogLikelihoodException(
+                        "Log likelihood is decreasing"
                     )
-                else:
-                    print(f"\nLog likelihood is decreasing of {previous_ll[k] - ll}")
 
-            previous_ll[k] = ll
+                previous_ll[init] = ll
+            except DecreasingLogLikelihoodException:
+                if ENFORCE_INCREASING_LIKELIHOOD:
+                    n_init -= 1
+                    if n_init == 0:
+                        raise DecreasingLogLikelihoodException(
+                            "All initializations end up with decreasing log likelihood"
+                        )
+                    drop_init(n_init, tau, previous_ll, to_drop=init)
+
+            init += 1
+
         if verbose:
             print(
                 f"After EM iteration {i+1}/{iterations} : Mean log likelihood ({n_init} paths) {np.mean(previous_ll):5f}...",
@@ -55,8 +80,11 @@ def em_algorithm(
     best_tau = tau[best_init]
     best_alpha, best_pi = implementation.m_step(X, best_tau)
 
-    return (
-        implementation.output(best_alpha),
-        implementation.output(best_pi),
-        implementation.output(best_tau),
-    )
+    if diagnostic:
+        return ll_log
+    else:
+        return (
+            implementation.output(best_alpha),
+            implementation.output(best_pi),
+            implementation.output(best_tau),
+        )

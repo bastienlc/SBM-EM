@@ -1,0 +1,18 @@
+Experiment 5
+Number of graphs passed: 12
+ELBO difference: -1.6717342621650773 +/- 0.31811820325597184
+NMI: 0.6866615453315331 +/- 0.08822655829818242
+Rand index: 0.9480402010050252 +/- 0.019610033665656314
+True modularity: -0.04727069967283403 +/- 0.01684088986514907
+Pred modularity: -0.05925890527327502 +/- 0.017098018327261585
+
+Metrics with best graph:
+Best graph for elbo: 7
+ELBO difference: -1.090258923127944
+Best graph for NMI: 6
+NMI: 0.8645617127121654
+Best graph for Rand index: 6
+Rand index: 0.9801005025125629
+Best graph for absolute difference in modularity: 6
+True modularity: -0.07515998514665645
+Pred modularity: -0.07857296772785854

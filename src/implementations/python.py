@@ -68,6 +68,10 @@ class PythonImplementation(GenericImplementation):
             for q in range(Q):
                 ll += tau[i, q] * np.log(alpha[q])
                 if elbo:
+                    tau_log = tau[i, q] * np.log(tau[i, q])
+                    tau_log = (
+                        0 if np.isnan(tau_log) else tau_log
+                    )  # Avoid NaN due to log(0)
                     ll -= tau[i, q] * np.log(tau[i, q])
                 for j in range(n):
                     if i != j:
