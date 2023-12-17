@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import networkx as nx
+import pandas as pd
 
 
 DATA_PATH = "data/"
@@ -171,4 +172,36 @@ def load_karate_club():
     y = np.array(y)
 
     X = nx.adjacency_matrix(G).todense()
+    return X, y
+
+
+def load_cora_dataset():
+    edges_data = "data/cora/cora.cites"
+    labels_data = "data/cora/nodes.csv"
+
+    # Edges
+    with open(edges_data) as edgelist:
+        G = nx.read_edgelist(edgelist, nodetype=int)
+
+    # Labels
+    labels = pd.read_csv(labels_data, usecols=["nodeId", "subject"])
+    subject_to_label_id = {
+        "Case_Based": 0,
+        "Genetic_Algorithms": 1,
+        "Neural_Networks": 2,
+        "Probabilistic_Methods": 3,
+        "Reinforcement_Learning": 4,
+        "Rule_Learning": 5,
+        "Theory": 6,
+    }
+    assert len(labels) == len(G.nodes())
+    for row in labels.itertuples():
+        G.nodes[row.nodeId]["label"] = subject_to_label_id[row.subject]
+    y = np.array([G.nodes[node]["label"] for node in G.nodes()])
+
+    print("Number of nodes:", G.number_of_nodes())
+    print("Number of edges:", G.number_of_edges())
+
+    X = nx.adjacency_matrix(G).todense()
+
     return X, y

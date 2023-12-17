@@ -4,6 +4,9 @@ from matplotlib import pyplot as plt
 import torch
 import itertools
 import networkx as nx
+from graspologic.plot import adjplot
+import pandas as pd
+import pickle
 
 from .data import graph_and_params_from_archive, DATA_PATH
 from .em import em_algorithm, DecreasingLogLikelihoodException
@@ -279,7 +282,7 @@ def show_karate_gt_vs_prediction(G, tau, y):
     plt.show()
 
 
-def report_metrics(X, tau, y, Q):
+def report_metrics(X, tau, y, Q, detailed=True):
     tau = rearrange_tau(tau, y, Q)
     pred_labels = np.argmax(tau, axis=1)
     print("NMI: {:.3f}".format(normalized_mutual_information(y, pred_labels)))
@@ -288,12 +291,47 @@ def report_metrics(X, tau, y, Q):
     pred_clustering = np.array([pred_labels == q for q in range(Q)])
     print("Gt Modularity: {:.3f}".format(modularity(X, gt_clustering)))
     print("Pred Modularity: {:.3f}".format(modularity(X, pred_clustering)))
-    print("Graph clustering coefficient:", clustering_coefficient(X, None))
-    print(
-        "Per class gt clustering coefficients:",
-        [clustering_coefficient(X, gt_clustering[q]) for q in range(Q)],
+    if detailed:
+        print("Graph clustering coefficient:", clustering_coefficient(X, None))
+        print(
+            "Per class gt clustering coefficients:",
+            [clustering_coefficient(X, gt_clustering[q]) for q in range(Q)],
+        )
+        print(
+            "Per class pred clustering coefficients:",
+            [clustering_coefficient(X, pred_clustering[q]) for q in range(Q)],
+        )
+
+
+def draw_dot_plot(X, classification, save_as=None):
+    meta = pd.DataFrame(
+        data={
+            "Class": classification,
+        },
     )
-    print(
-        "Per class pred clustering coefficients:",
-        [clustering_coefficient(X, pred_clustering[q]) for q in range(Q)],
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    adjplot(
+        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], ticks=True
     )
+    if save_as is not None:
+        plt.savefig(f"images/{save_as}.png")
+    plt.show()
+
+
+def write_em_results(alpha, pi, tau, path):
+    with open(os.path.join(RESULTS_PATH, path, "alpha.pkl"), "wb") as f:
+        pickle.dump(alpha, f)
+    with open(os.path.join(RESULTS_PATH, path, "pi.pkl"), "wb") as f:
+        pickle.dump(pi, f)
+    with open(os.path.join(RESULTS_PATH, path, "tau.pkl"), "wb") as f:
+        pickle.dump(tau, f)
+
+
+def load_em_results(path):
+    with open(os.path.join(RESULTS_PATH, path, "alpha.pkl"), "rb") as f:
+        alpha = pickle.load(f)
+    with open(os.path.join(RESULTS_PATH, path, "pi.pkl"), "rb") as f:
+        pi = pickle.load(f)
+    with open(os.path.join(RESULTS_PATH, path, "tau.pkl"), "rb") as f:
+        tau = pickle.load(f)
+    return alpha, pi, tau
