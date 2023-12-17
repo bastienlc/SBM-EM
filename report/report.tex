@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+\documentclass[10pt]{article}
 \usepackage[utf8]{inputenc}
 
 % Any additional packages needed should be included after jmlr2e.
@@ -15,6 +15,7 @@
 \usepackage{tikz}
 \usetikzlibrary{bayesnet}
 \usetikzlibrary{arrows}
+\usepackage{hyperref}
 
 % Definitions of handy macros can go here
 \newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
@@ -62,7 +63,7 @@
     \begin{itemize}
         \item hésitez pas à utiliser Zotero pour exporter d'éventuelles références bibliographiques, histoire d'avoir un remplissage uniforme e de gagner du temps
         \item Une fois une abbréviation introduite (ex: SBM), si possible toujours utiliser l'abbréviation et ne pas ré-écrire l'expression entière
-        \item Je propose de préférer le terme de "cluster" à "community". (Il faudra que je change ce que j'ai écrit du coup)
+        \item Je propose de préférer le terme de "cluster" à "community".
     \end{itemize}
 }
 
@@ -76,33 +77,26 @@
 
 \section{Introduction}
 
-Community detection is the problem of revealing communities within a graph, also referred to as ``graph clustering'' \cite{fortunato_community_2010}, where a community within a graph is often defined as a set of nodes that are more densely connected between them than with the rest of the network.
-Among existing methods to tackle this problem, model-based methods fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph maybe extracted or computed. The Stochastic Block Model (SBM) is a renowned example of graph modelling. In \cite{main_article}, J.-J. Daudin \textit{et al.} explore this model from a frequentist point of view and propose a variational EM algorithm to fit this model. In this report, we quickly review some literature on community detection in Section \ref{sec:context}. In Section \ref{sec:method}, we detail the method introduced in \cite{main_article} as well as a variant from the literature and discuss the problem of overlapping communities. In Sections \ref{sec:experiments} and \ref{sec:discussion}, our experiments are presented and discussed. Lastly, we conclude in Section \ref{sec:conclusion}.
+Garph clustering, also referred to as ``community detection'' \cite{fortunato_community_2010}, is the problem of revealing clusters within a graph where a ``cluster'' is often defined as a set of nodes that are more densely connected between them than with the rest of the network.
+More precisely, a cluster $C$ is defined as a group of nodes with an internal density $\delta_{int}(C)$ larger than its inter-community density $\delta_{ext}(C)$, where
+\begin{equation}
+    \delta_{int} = \frac{\text{\# internal edges of }C}{n_C (n_C - 1) / 2} \quad \text{and} \quad \delta_{ext} = \frac{\text{\# inter-cluster edges of C}}{n_C (n - n_C)}
+\end{equation}
+where $n$ is the number of nodes of the graph, $n_C$ is the number of nodes in the cluster $C$ and internal (resp. inter-cluster) edges are edges between nodes of $C$ (resp. between nodes of $C$ and nodes outside of $C$). This definition is actually characteristic of homophilious clusters, while heterophilious clusters would take be such that $\delta_{int}(C) < \delta_{ext}(C)$.
+Graph clustering has tremendous applications in the study of real networks such as
+social [1] or biological [4] networks and can reveal properties of complex systems at mesoscopic scales.
 
-\section{Context and Related Work}
-\label{sec:context}
+Community detection is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. As well documented in \cite{fortunato_community_2010}, several classes of algorithms can be identified in the literature. To name a few, hierarchical algorithms rely on similarity measures to aggregate or divise groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always easy. Alternatively, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}).
 
+In particular, contrary to algorithmic methods as the ones above, model-based methods fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph.
 
-\subsection{What is Community Detection?}
-
-Community Detection has tremendous applications in the study of real networks such as social \cite{chunaev_community_2020} or biological \cite{sah_exploring_2014} networks. This problem is of importance to perform a mesoscopic study of graphs, where communities can be interpreted as meta-nodes that reveal new interactions associated to possibly interpretable functions within a complex system represented as a graph.
-
-Although the definition of a ``community'' remains somewhat sloppy in the literature, a common definition describes it as a group of nodes with an internal density (defined as the ratio of edges between nodes of the group that are actually present over the number of such possible edges) that is larger than its inter-community density (similarly defined, but between nodes of the group and nodes outside the group). This definition is actually specific to homophilious communities, which we will focus on, while heterophily would take an opposite definition.
-
-\subsection{Common community detection approaches}
-
-Community detection is an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(2^n)$ with $n$ the number of nodes. Instead, common approaches [...]
-
-    [Mention types of methods, but focus on model-based approaches]
-
-\subsection{A word on overlapping community detection approaches}
-
-
+In this report, we detail the method introduced in \cite{main_article} as well as variants and alternatives from the literature in Section \ref{sec:method}. In Sections \ref{sec:experiments} and \ref{sec:discussion}, we present implementation of the method and the experients performed to assess is performance and limits. Lastly, we conclude in Section \ref{sec:conclusion}.
 
 
 \section{Proposed method}
+    \label{sec:method}
 
-In "A mixture model for random graphs" \cite{main_article}, the authors propose a bayesian model for graphs, and an Expectation-Maximization approach to fit this model to a given graph.
+In "A mixture model for random graphs" \cite{main_article}, the authors propose a bayesian model for graphs, and an EM approach to fit this model to a given graph.
 
 \subsection{A mixture model for random graphs}
 
@@ -182,15 +176,14 @@ This fixed point relation doesn't assure the theoretical convergence of the algo
 [Sofiane: présenter la variante]
 
 
-\subsection{Addressing overlapping clusters}
-
-
-
 \section{Experiments}
 \label{sec:experiments}
 
 \subsection{Implementation}
 
+
+\subsection{Metrics}
+    \label{subsec:metrics}
 
 \subsection{Testing on SBM datasets}
 
