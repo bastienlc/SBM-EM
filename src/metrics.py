@@ -44,11 +44,13 @@ def mutual_information(gt, pred, Q=None):
         Q = max(gt.max(), pred.max()) + 1
     p_gt = np.bincount(gt, minlength=Q) / gt.shape[0]
     p_pred = np.bincount(pred, minlength=Q) / pred.shape[0]
-    p_gt[p_gt == 0] = 1  # Avoid division by zero
-    p_pred[p_pred == 0] = 1
-    p_joint, _, _ = np.histogram2d(gt, pred, bins=Q)
-    p_joint /= gt.shape[0]
-    arg_log = p_joint / (p_gt[:, None] * p_pred[None, :])
+    mask_gt = (gt[:, None] == np.arange(Q)).astype(int)
+    mask_pred = (pred[:, None] == np.arange(Q)).astype(int)
+    p_joint = np.dot(mask_gt.T, mask_pred) / gt.shape[0]
+    denom_log = p_gt[:, None] * p_pred[None, :]
+    denom_mask = denom_log != 0  # Avoid division by 0
+    arg_log = np.ones((Q, Q))
+    arg_log[denom_mask] = p_joint[denom_mask] / denom_log[denom_mask]
     arg_log[arg_log == 0] = 1  # Avoid log(0)
     return np.sum(p_joint * np.log(arg_log))
 
@@ -73,6 +75,20 @@ def SBM_clustering_coefficient(alpha, pi):
     return np.einsum(
         "q, l, m, ql, qm, lm ->", alpha, alpha, alpha, pi, pi, pi
     ) / np.einsum("q, l, m, ql, qm ->", alpha, alpha, alpha, pi, pi)
+
+
+def clustering_coefficient(X, cluster=None):
+    """Compute the clustering coefficient over the specified cluster. Also called "transitivity".
+    cluster is the mask indicating which nodes are in the considered cluster.
+    If cluster is None, compute the clustering coefficient over the whole graph.
+    """
+    sub_X = X if cluster is None else X[cluster, :][:, cluster]
+    degrees = np.sum(sub_X, axis=1)
+    denom = np.sum(degrees * (degrees - 1))
+    if denom == 0:
+        return 0
+    else:
+        return np.einsum("ij, jk, ki ->", sub_X, sub_X, sub_X) / denom
 
 
 def intra_cluster_density(X, cluster, weighted=False):
