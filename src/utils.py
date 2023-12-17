@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import torch
 
@@ -21,16 +23,24 @@ def sort_parameters(alpha, pi):
             return alpha[sort_indices], pi[sort_indices, :]
 
 
-def drop_init(n_init, tau_list, ll_list, to_drop=None):
-    if n_init > 1:
-        to_drop = to_drop if to_drop is not None else np.argmin(ll_list)
-        return (
-            n_init - 1,
-            tau_list[:to_drop] + tau_list[to_drop + 1 :],
-            np.delete(ll_list, to_drop),
-        )
-    else:
-        return n_init, tau_list, ll_list
+def drop_inits(
+    inits: List[int],
+    iteration: int,
+    max_iterations: int,
+    log_likelihoods: np.ndarray,
+    inits_to_drop: List[int] = [],
+):
+    for init in inits_to_drop:
+        try:
+            inits.remove(init)
+        except Exception:
+            raise ValueError("Removed all initialisations")
+
+    while (max_iterations - iteration) / 10 < len(inits) and len(inits) > 1:
+        index_to_drop = np.argmin(log_likelihoods[inits, iteration])
+        inits = np.delete(inits, index_to_drop)
+
+    return inits
 
 
 def b(x, pi):
