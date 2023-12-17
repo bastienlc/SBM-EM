@@ -251,7 +251,9 @@ def test_log_likelihood(log_likelihood, input, output):
     expected_ll = 0
     for i in range(n):
         for q in range(Q):
-            expected_ll += tau[i, q] * np.log(alpha[q]) - tau[i, q] * np.log(tau[i, q])
+            tau_log = tau[i, q] * np.log(tau[i, q])
+            tau_log = 0 if np.isnan(tau_log) else tau_log
+            expected_ll += tau[i, q] * np.log(alpha[q]) - tau_log
             for j in range(n):
                 if i != j:
                     for l in range(Q):

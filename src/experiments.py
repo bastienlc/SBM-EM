@@ -1,15 +1,53 @@
 import os
 import numpy as np
 from matplotlib import pyplot as plt
+import torch
+import itertools
 import networkx as nx
 
 from .data import graph_and_params_from_archive, DATA_PATH
 from .em import em_algorithm, DecreasingLogLikelihoodException
-from .metrics import normalized_mutual_information, rand_index, modularity
+from .metrics import (
+    normalized_mutual_information,
+    rand_index,
+    modularity,
+    clustering_coefficient,
+)
 from .implementations import IMPLEMENTATIONS
 
 
 RESULTS_PATH = "results/"
+
+
+def rearrange_tau(q, true_classes_clusters, Q):
+    # Rearrange q such that the number of misclassified nodes is minimized
+    if isinstance(q, torch.Tensor):
+        pred_clusters = np.argmax(q.detach().numpy(), axis=1)
+    else:
+        pred_clusters = np.argmax(q, axis=1)
+    # Store all possible permutations of the classes
+    permutations = list()
+    for permutation in itertools.permutations(range(Q)):
+        permutations.append(permutation)
+
+    # Compute the number of misclassified nodes for each permutation
+    misclassified_nodes = list()
+    for permutation in permutations:
+        misclassified_nodes.append(
+            np.sum(pred_clusters != [permutation[i] for i in true_classes_clusters])
+        )
+    # Find the permutation that minimizes the number of misclassified nodes
+    best_permutation = permutations[np.argmin(misclassified_nodes)]
+
+    # Rearrange q according to the best permutation
+    new_q = np.zeros_like(q)
+    for i in range(Q):
+        new_q[:, i] = q[:, best_permutation[i]]
+
+    return new_q
+
+
+# Experiments on SBM dataset
 
 
 def compare_elbos(
@@ -27,11 +65,18 @@ def compare_elbos(
 
 
 def write_results(
-    experiment, elbo_diffs, nmis, rands, true_modularities, pred_modularities
+    experiment,
+    successful_clusters,
+    elbo_diffs,
+    nmis,
+    rands,
+    true_modularities,
+    pred_modularities,
 ):
     experiment_path = os.path.join("SBM", f"experiment_{experiment}")
     np.savez(
         os.path.join(RESULTS_PATH, experiment_path, "results.npz"),
+        successful_clusters=successful_clusters,
         elbo_diffs=elbo_diffs,
         nmis=nmis,
         rands=rands,
@@ -43,6 +88,7 @@ def write_results(
 def write_report(experiment):
     experiment_path = os.path.join("SBM", f"experiment_{experiment}")
     with np.load(os.path.join(RESULTS_PATH, experiment_path, "results.npz")) as results:
+        successful_clusters = results["successful_clusters"]
         elbo_diffs = results["elbo_diffs"]
         nmis = results["nmis"]
         rands = results["rands"]
@@ -53,7 +99,7 @@ def write_report(experiment):
             os.path.join(RESULTS_PATH, experiment_path, "report.txt"), "w"
         ) as report:
             report.write(f"Experiment {experiment}\n")
-            report.write(f"Number of graphs passed: {len(nmis)}\n")
+            report.write(f"Number of graphs passed: {len(successful_clusters)}\n")
             report.write(
                 f"ELBO difference: {np.mean(elbo_diffs)} +/- {np.std(elbo_diffs)}\n"
             )
@@ -69,19 +115,23 @@ def write_report(experiment):
 
             report.write("Metrics with best graph:\n")
             best_graph_elbo = np.argmax(elbo_diffs)
-            report.write(f"Best graph for elbo: {best_graph_elbo}\n")
+            best_graph_elbo_idx = successful_clusters[best_graph_elbo]
+            report.write(f"Best graph for elbo: {best_graph_elbo_idx}\n")
             report.write(f"ELBO difference: {elbo_diffs[best_graph_elbo]}\n")
             best_graph_nmi = np.argmax(nmis)
-            report.write(f"Best graph for NMI: {best_graph_nmi}\n")
+            best_graph_nmi_idx = successful_clusters[best_graph_nmi]
+            report.write(f"Best graph for NMI: {best_graph_nmi_idx}\n")
             report.write(f"NMI: {nmis[best_graph_nmi]}\n")
             best_graph_rand = np.argmax(rands)
-            report.write(f"Best graph for Rand index: {best_graph_rand}\n")
+            best_graph_rand_idx = successful_clusters[best_graph_rand]
+            report.write(f"Best graph for Rand index: {best_graph_rand_idx}\n")
             report.write(f"Rand index: {rands[best_graph_rand]}\n")
             best_graph_modularity = np.argmax(
                 np.abs(true_modularities) - np.abs(pred_modularities)
             )
+            best_graph_modularity_idx = successful_clusters[best_graph_modularity]
             report.write(
-                f"Best graph for absolute difference in modularity: {best_graph_modularity}\n"
+                f"Best graph for absolute difference in modularity: {best_graph_modularity_idx}\n"
             )
             report.write(
                 f"True modularity: {true_modularities[best_graph_modularity]}\n"
@@ -98,6 +148,7 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
         n = params["n"]
         Q = params["Q"]
 
+    successful_clusters = []
     elbo_diffs = []
     nmis = []
     rands = []
@@ -118,6 +169,8 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
                 implementation=implementation,
                 verbose=False,
             )
+            successful_clusters.append(graph_idx)
+            tau_pred = rearrange_tau(tau_pred, np.argmax(Z, axis=1), Q)
 
             # Fitting quality metrics
             elbo_diffs.append(
@@ -155,6 +208,7 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
     pred_modularities = np.array(pred_modularities)
     write_results(
         experiment,
+        successful_clusters,
         elbo_diffs,
         nmis,
         rands,
@@ -190,3 +244,56 @@ def initialization_sensitivity(n_init, n_iter=100, implementation="pytorch"):
     plt.ylabel("Log likelihood")
     plt.title(f"Log likelihood for {n_init} initializations")
     plt.show()
+
+
+# Experiments on real datasets
+
+
+def show_karate_gt_vs_prediction(G, tau, y):
+    tau = rearrange_tau(tau, y, 2)
+
+    color_list = ["g", "c", "r"]
+    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    fig.suptitle(
+        "Karate club ; NMI: {:.3f}".format(
+            normalized_mutual_information(y, np.argmax(tau, axis=1))
+        ),
+        fontsize=20,
+    )
+    fig.set_facecolor("w")
+    fig.valign = "center"
+    fig.halign = "center"
+    pos = nx.spring_layout(G, seed=42)
+    node_colors = [color_list[i] for i in y]
+    nx.draw_networkx(G, node_color=node_colors, ax=ax[0], pos=pos)
+    ax[0].set_title("Ground truth")
+    node_colors = np.argmax(tau, axis=1)
+    node_colors = [color_list[i] for i in node_colors]
+    nx.draw_networkx(G, node_color=node_colors, ax=ax[1], pos=pos)
+    ax[1].set_title("Predicted")
+    node_colors = np.argmax(tau, axis=1)
+    node_colors[node_colors != y] = 2
+    node_colors = [color_list[i] for i in node_colors]
+    nx.draw_networkx(G, node_color=node_colors, ax=ax[2], pos=pos)
+    ax[2].set_title("Misclassified")
+    plt.show()
+
+
+def report_metrics(X, tau, y, Q):
+    tau = rearrange_tau(tau, y, Q)
+    pred_labels = np.argmax(tau, axis=1)
+    print("NMI: {:.3f}".format(normalized_mutual_information(y, pred_labels)))
+    print("Rand index: {:.3f}".format(rand_index(y, pred_labels)))
+    gt_clustering = np.array([y == q for q in range(Q)])
+    pred_clustering = np.array([pred_labels == q for q in range(Q)])
+    print("Gt Modularity: {:.3f}".format(modularity(X, gt_clustering)))
+    print("Pred Modularity: {:.3f}".format(modularity(X, pred_clustering)))
+    print("Graph clustering coefficient:", clustering_coefficient(X, None))
+    print(
+        "Per class gt clustering coefficients:",
+        [clustering_coefficient(X, gt_clustering[q]) for q in range(Q)],
+    )
+    print(
+        "Per class pred clustering coefficients:",
+        [clustering_coefficient(X, pred_clustering[q]) for q in range(Q)],
+    )

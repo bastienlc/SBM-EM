@@ -7,6 +7,7 @@ from ..metrics import (
     normalized_mutual_information,
     rand_index,
     clustering_coefficient,
+    modularity,
 )
 
 n = 5
@@ -51,3 +52,18 @@ class TestMetrics:
 
     def test_clustering_coefficient(self):
         assert abs(nx.transitivity(G) - clustering_coefficient(X, None)) < close_epsilon
+
+    def test_modularity(self):
+        cluster_1 = {0, 2}
+        cluster_2 = {1}
+        cluster_3 = {3, 4}
+        clustering_nx = [cluster_1, cluster_2, cluster_3]
+        clustering = []
+        for cluster in clustering_nx:
+            cluster_mask = np.zeros(n, dtype=bool)
+            cluster_mask[list(cluster)] = True
+            clustering.append(cluster_mask)
+        assert (
+            abs(nx.community.modularity(G, clustering_nx) - modularity(X, clustering))
+            < close_epsilon
+        )
