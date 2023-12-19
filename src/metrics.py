@@ -10,7 +10,6 @@ def rand_index(gt, pred):
     the number of pairs of elements that are assigned in the same or in different clusters,
     in the predicted and true clusterings.
     """
-    # TODO: Can be improved with Adjusted Rand Index
     grouped_gt = gt[:, None] == gt[None, :]
     grouped_pred = pred[:, None] == pred[None, :]
     _a = grouped_gt & grouped_pred
@@ -57,7 +56,6 @@ def mutual_information(gt, pred, Q=None):
 
 def normalized_mutual_information(gt, pred, Q=None):
     """Normalized version of mutual information."""
-    # TODO: Can be improved with Adjusted Mutual Information
     if Q is None:
         Q = max(gt.max(), pred.max()) + 1
     p_gt = np.bincount(gt) / gt.shape[0]
