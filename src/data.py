@@ -93,22 +93,22 @@ def generate_SBM_dataset(experiment=1, n_graphs=100):
         alpha = None  # alpha is random in this experiment
         pi = None  # pi is random in this experiment
     elif experiment == 3:
-        n = 200
+        n = 150
         Q = 3
         alpha = np.ones(Q) / Q
         pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
     elif experiment == 4:
-        n = 200
+        n = 150
         Q = 5
         alpha = np.ones(Q) / Q
         pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
     elif experiment == 5:
-        n = 200
+        n = 150
         Q = 2
         alpha = np.array([9 / 10, 1 / 10])
         pi = np.array([[eps1, a], [eps2, b]])
     elif experiment == 6:
-        n = 200
+        n = 150
         Q = 3
         alpha = np.ones(Q) / Q
         pi = (1 - eps1) * np.ones((Q, Q)) + (eps2 - (1 - eps1)) * np.eye(Q)

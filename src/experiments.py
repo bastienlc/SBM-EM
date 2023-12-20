@@ -16,7 +16,7 @@ from .metrics import (
     modularity,
     clustering_coefficient,
 )
-from .implementations import IMPLEMENTATIONS
+from .implementations import get_implementation
 
 
 RESULTS_PATH = "results/"
@@ -56,7 +56,7 @@ def rearrange_tau(q, true_classes_clusters, Q):
 def compare_elbos(
     X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred, implementation="pytorch"
 ):
-    implementation = IMPLEMENTATIONS[implementation]
+    implementation = get_implementation(implementation)
     X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred = map(
         implementation.input, [X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred]
     )
@@ -92,6 +92,9 @@ def write_report(experiment, implementation="pytorch"):
         n_graphs = params["n_graphs"]
         n = params["n"]
         Q = params["Q"]
+    passed_graphs = np.load(
+        os.path.join(RESULTS_PATH, experiment_path, "passed_graphs.npy")
+    )
 
     elbo_diffs = []
     param_distances = []
@@ -100,44 +103,42 @@ def write_report(experiment, implementation="pytorch"):
     true_modularities = []
     pred_modularities = []
     for graph_idx in range(n_graphs):
-        X, Z, alpha, pi = graph_and_params_from_archive(
-            os.path.join(experiment_path, f"graph_{graph_idx}.npz")
-        )
-        alpha_pred, pi_pred, tau_pred = load_SBM_pred_results(
-            experiment_path, graph_idx
-        )
-        passed_graphs = np.load(
-            os.path.join(RESULTS_PATH, experiment_path, "passed_graphs.npy")
-        )
+        if graph_idx in passed_graphs:
+            X, Z, alpha, pi = graph_and_params_from_archive(
+                os.path.join(experiment_path, f"graph_{graph_idx}.npz")
+            )
+            alpha_pred, pi_pred, tau_pred = load_SBM_pred_results(
+                experiment_path, graph_idx
+            )
 
-        # Fitting quality metrics
-        elbo_diffs.append(
-            IMPLEMENTATIONS[implementation].output(
-                compare_elbos(
-                    X,
-                    alpha,
-                    pi,
-                    Z,
-                    alpha_pred,
-                    pi_pred,
-                    tau_pred,
-                    implementation=implementation,
+            # Fitting quality metrics
+            elbo_diffs.append(
+                get_implementation(implementation).output(
+                    compare_elbos(
+                        X,
+                        alpha,
+                        pi,
+                        Z,
+                        alpha_pred,
+                        pi_pred,
+                        tau_pred,
+                        implementation=implementation,
+                    )
                 )
             )
-        )
-        dist_alpha = np.linalg.norm(alpha - alpha_pred) / Q
-        dist_pi = np.linalg.norm(pi - pi_pred) / (Q**2)
-        param_distances.append(dist_alpha + dist_pi)
+            dist_alpha = np.linalg.norm(alpha - alpha_pred) / Q
+            dist_pi = np.linalg.norm(pi - pi_pred) / (Q**2)
+            param_distances.append(dist_alpha + dist_pi)
 
-        # Clustering quality metrics
-        true_labels = np.argmax(Z, axis=1)
-        pred_labels = np.argmax(tau_pred, axis=1)
-        nmis.append(normalized_mutual_information(true_labels, pred_labels))
-        rands.append(rand_index(true_labels, pred_labels))
-        true_clustering = np.array([true_labels == q for q in range(Q)])
-        pred_clustering = np.array([pred_labels == q for q in range(Q)])
-        true_modularities.append(modularity(X, true_clustering))
-        pred_modularities.append(modularity(X, pred_clustering))
+            # Clustering quality metrics
+            true_labels = np.argmax(Z, axis=1)
+            pred_labels = np.argmax(tau_pred, axis=1)
+            nmis.append(normalized_mutual_information(true_labels, pred_labels))
+            rands.append(rand_index(true_labels, pred_labels))
+            true_clustering = np.array([true_labels == q for q in range(Q)])
+            pred_clustering = np.array([pred_labels == q for q in range(Q)])
+            true_modularities.append(modularity(X, true_clustering))
+            pred_modularities.append(modularity(X, pred_clustering))
     param_distances = np.array(param_distances)
     elbo_diffs = np.array(elbo_diffs)
     nmis = np.array(nmis)
@@ -165,7 +166,7 @@ def write_report(experiment, implementation="pytorch"):
         report.write("\n")
 
         report.write("Metrics with best graphs:\n")
-        best_graph_param_distance = np.argmax(param_distances)
+        best_graph_param_distance = np.argmin(param_distances)
         best_graph_distance_param = passed_graphs[best_graph_param_distance]
         report.write(f"Best graph for params distance: {best_graph_distance_param}\n")
         report.write(f"Params distance: {param_distances[best_graph_distance_param]}\n")
@@ -181,11 +182,26 @@ def write_report(experiment, implementation="pytorch"):
         best_graph_rand_idx = passed_graphs[best_graph_rand]
         report.write(f"Best graph for Rand index: {best_graph_rand_idx}\n")
         report.write(f"Rand index: {rands[best_graph_rand]}\n")
-        best_graph_modularity = np.argmax(true_modularities)
-        best_graph_modularity_idx = passed_graphs[best_graph_modularity]
-        report.write(f"Best graph for gt modularity: {best_graph_modularity_idx}\n")
-        report.write(f"True modularity: {true_modularities[best_graph_modularity]}\n")
-        report.write(f"Pred modularity: {pred_modularities[best_graph_modularity]}\n")
+        best_graph_gt_modularity = np.argmax(true_modularities)
+        best_graph_gt_modularity_idx = passed_graphs[best_graph_gt_modularity]
+        report.write(f"Best graph for gt modularity: {best_graph_gt_modularity_idx}\n")
+        report.write(
+            f"True modularity: {true_modularities[best_graph_gt_modularity_idx]}\n"
+        )
+        report.write(
+            f"Pred modularity: {pred_modularities[best_graph_gt_modularity]}\n"
+        )
+        best_graph_pred_modularity = np.argmax(pred_modularities)
+        best_graph_pred_modularity_idx = passed_graphs[best_graph_pred_modularity]
+        report.write(
+            f"Best graph for gt modularity: {best_graph_pred_modularity_idx}\n"
+        )
+        report.write(
+            f"True modularity: {true_modularities[best_graph_pred_modularity]}\n"
+        )
+        report.write(
+            f"Pred modularity: {pred_modularities[best_graph_pred_modularity]}\n"
+        )
 
 
 def launch_experiment(experiment=1, n_init=5, n_iter=100, implementation="pytorch"):
