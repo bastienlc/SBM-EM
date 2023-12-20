@@ -35,7 +35,7 @@ def em_iteration(
     tau = implementation.e_step(X, alpha, pi)
     ll = implementation.output(implementation.log_likelihood(X, alpha, pi, tau))
 
-    if not implementation.parameters_are_ok(alpha, pi, tau):
+    if not implementation.check_parameters(alpha, pi, tau):
         raise ValueError("Parameters are not ok")
 
     return tau, ll

@@ -15,7 +15,7 @@ class GenericImplementation:
         Performs the M-step of the EM algorithm.
     log_likelihood(X, alpha, pi, tau)
         Computes the log-likelihood.
-    parameters_are_ok(alpha, pi, tau)
+    check_parameters(alpha, pi, tau)
         Checks if the parameters are valid.
     fixed_point_iteration(tau, X, alpha, pi)
         Performs a fixed-point iteration of the E-step.
@@ -109,7 +109,7 @@ class GenericImplementation:
         """
         pass
 
-    def parameters_are_ok(self, alpha, pi, tau):
+    def check_parameters(self, alpha, pi, tau):
         """
         Checks if the parameters are valid. This method may raise a ValueError if the parameters are not valid.
 

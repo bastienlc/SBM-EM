@@ -114,7 +114,7 @@ class PytorchImplementation(GenericImplementation):
         ll += 1 / 2 * torch.einsum("iq,jl,iqjl->", tau, tau, log_b_values)
         return ll
 
-    def parameters_are_ok(
+    def check_parameters(
         self, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
     ):
         if torch.any(torch.isnan(alpha)):
