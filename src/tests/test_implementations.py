@@ -3,10 +3,8 @@ import pytest
 
 from ..implementations import (
     NumpyImplementation,
-    PythonImplementation,
     PytorchImplementation,
     PytorchLogImplementation,
-    PytorchLowMemoryImplementation,
 )
 
 
@@ -60,37 +58,8 @@ def test_compute_b(compute_b, input, output):
 
 
 @pytest.mark.parametrize(
-    "partial_compute_b, input, output",
-    [
-        (
-            PytorchLowMemoryImplementation()._partial_compute_b,
-            PytorchLowMemoryImplementation().input,
-            PytorchLowMemoryImplementation().output,
-        ),
-    ],
-)
-def test_partial_compute_b(partial_compute_b, input, output):
-    for i in range(n):
-        computed_values = output(partial_compute_b(input(X)[i, :], input(pi)))
-        assert computed_values.shape == (n, Q, Q)
-        for j in range(n):
-            for q in range(Q):
-                for l in range(Q):
-                    if i != j:
-                        expected_value = pi[q, l] ** X[i, j] * (1 - pi[q, l]) ** (
-                            1 - X[i, j]
-                        )
-                        assert np.allclose(computed_values[j, q, l], expected_value)
-
-
-@pytest.mark.parametrize(
     "fixed_point_iteration, input, output",
     [
-        (
-            PythonImplementation().fixed_point_iteration,
-            PythonImplementation().input,
-            PythonImplementation().output,
-        ),
         (
             NumpyImplementation().fixed_point_iteration,
             NumpyImplementation().input,
@@ -100,11 +69,6 @@ def test_partial_compute_b(partial_compute_b, input, output):
             PytorchImplementation().fixed_point_iteration,
             PytorchImplementation().input,
             PytorchImplementation().output,
-        ),
-        (
-            PytorchLowMemoryImplementation().fixed_point_iteration,
-            PytorchLowMemoryImplementation().input,
-            PytorchLowMemoryImplementation().output,
         ),
         (
             PytorchLogImplementation().fixed_point_iteration,
@@ -135,11 +99,6 @@ def test_fixed_point_iteration(fixed_point_iteration, input, output):
     "e_step, input, output",
     [
         (
-            PythonImplementation().e_step,
-            PythonImplementation().input,
-            PythonImplementation().output,
-        ),
-        (
             NumpyImplementation().e_step,
             NumpyImplementation().input,
             NumpyImplementation().output,
@@ -148,11 +107,6 @@ def test_fixed_point_iteration(fixed_point_iteration, input, output):
             PytorchImplementation().e_step,
             PytorchImplementation().input,
             PytorchImplementation().output,
-        ),
-        (
-            PytorchLowMemoryImplementation().e_step,
-            PytorchLowMemoryImplementation().input,
-            PytorchLowMemoryImplementation().output,
         ),
         (
             PytorchLogImplementation().e_step,
@@ -172,11 +126,6 @@ def test_e_step(e_step, input, output):
     "m_step, input, output",
     [
         (
-            PythonImplementation().m_step,
-            PythonImplementation().input,
-            PythonImplementation().output,
-        ),
-        (
             NumpyImplementation().m_step,
             NumpyImplementation().input,
             NumpyImplementation().output,
@@ -185,11 +134,6 @@ def test_e_step(e_step, input, output):
             PytorchImplementation().m_step,
             PytorchImplementation().input,
             PytorchImplementation().output,
-        ),
-        (
-            PytorchLowMemoryImplementation().m_step,
-            PytorchLowMemoryImplementation().input,
-            PytorchLowMemoryImplementation().output,
         ),
         (
             PytorchLogImplementation().m_step,
@@ -222,11 +166,6 @@ def test_m_step(m_step, input, output):
     "log_likelihood, input, output",
     [
         (
-            PythonImplementation().log_likelihood,
-            PythonImplementation().input,
-            PythonImplementation().output,
-        ),
-        (
             NumpyImplementation().log_likelihood,
             NumpyImplementation().input,
             NumpyImplementation().output,
@@ -235,11 +174,6 @@ def test_m_step(m_step, input, output):
             PytorchImplementation().log_likelihood,
             PytorchImplementation().input,
             PytorchImplementation().output,
-        ),
-        (
-            PytorchLowMemoryImplementation().log_likelihood,
-            PytorchLowMemoryImplementation().input,
-            PytorchLowMemoryImplementation().output,
         ),
         (
             PytorchLogImplementation().log_likelihood,
