@@ -1,3 +1,6 @@
+from typing import Optional, Tuple
+
+import numpy as np
 import torch
 
 from ...constants import *
@@ -11,8 +14,22 @@ torch.set_default_dtype(
 )  # torch.float32 is not precise enough for our needs (nans show up)
 
 
-def normalize_matrix_with_nan_handling(tau):
+def normalize_matrix_with_nan_handling(tau: torch.Tensor) -> torch.Tensor:
+    """
+    Normalizes the tau matrix while handling NaN values.
+
+    Parameters
+    ----------
+    tau : torch.Tensor
+        The tau matrix.
+
+    Returns
+    -------
+    torch.Tensor
+        Normalized tau matrix.
+    """
     normalized_tau = tau / torch.sum(tau, dim=1, keepdim=True)
+
     if torch.any(torch.isnan(normalized_tau)):
         _, max_indices = torch.max(tau, dim=1, keepdim=True)
         replacement = torch.full_like(tau, EPSILON)
@@ -24,31 +41,125 @@ def normalize_matrix_with_nan_handling(tau):
 
 
 class PytorchImplementation(GenericImplementation):
-    def input(self, array):
+    """
+    PytorchImplementation class for the EM algorithm. This class implements the EM algorithm using PyTorch.
+
+    Methods
+    -------
+    e_step(X, alpha, pi)
+        Performs the E-step of the EM algorithm.
+    init_tau(n, Q)
+        Initializes the tau matrix.
+    m_step(X, tau)
+        Performs the M-step of the EM algorithm.
+    log_likelihood(X, alpha, pi, tau)
+        Computes the log-likelihood.
+    check_parameters(alpha, pi, tau)
+        Checks if the parameters are valid.
+    fixed_point_iteration(tau, X, alpha, pi)
+        Performs a fixed-point iteration of the E-step.
+    input(array)
+        Processes input arrays.
+    output(array)
+        Processes output arrays.
+    """
+
+    def input(self, array: np.ndarray) -> torch.Tensor:
+        """
+        Processes the input array.
+
+        Parameters
+        ----------
+        array : np.ndarray
+            Input data to be processed.
+
+        Returns
+        -------
+        torch.Tensor
+            Processed input data. It can then be fed to the other methods.
+        """
         return torch.tensor(array, device=DEVICE, dtype=torch.float64)
 
-    def output(self, array):
+    def output(self, array) -> np.ndarray:
+        """
+        Processes the output array.
+
+        Parameters
+        ----------
+        array
+            Output data to be processed.
+
+        Returns
+        -------
+        np.ndarray
+            Processed output data. Returns a numpy array.
+        """
         if isinstance(array, torch.Tensor):
             return array.cpu().detach().numpy()
         else:
             return array
 
-    def m_step(self, X: torch.Tensor, tau: torch.Tensor):
+    def m_step(
+        self, X: torch.Tensor, tau: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Performs the M-step of the EM algorithm.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        tau : torch.Tensor
+            Current tau matrix.
+
+        Returns
+        -------
+        Tuple[torch.Tensor, torch.Tensor]
+            Estimated alpha and pi parameters.
+        """
         n = X.shape[0]
-        alpha = torch.sum(tau, axis=0) / n
+        alpha = torch.sum(tau, dim=0) / n
         pi = (
             torch.einsum("ij,iq,jl->ql", X, tau, tau)
             - torch.einsum("ii,iq,il->ql", X, tau, tau)
         ) / (torch.einsum("iq,jl->ql", tau, tau) - torch.einsum("iq,il->ql", tau, tau))
-
         return alpha, pi
 
-    def init_tau(self, n, Q):
+    def init_tau(self, n: int, Q: int) -> torch.Tensor:
+        """
+        Initializes the tau matrix.
+
+        Parameters
+        ----------
+        n : int
+            Number of nodes.
+        Q : int
+            Number of classes.
+
+        Returns
+        -------
+        torch.Tensor
+            Initialized tau matrix.
+        """
         tau = torch.rand(n, Q, device=DEVICE)
         return tau / torch.sum(tau, dim=1, keepdim=True)
 
-    def _compute_b(self, X: torch.Tensor, pi: torch.Tensor):
-        # returns a tensor of shape (n, Q, n, Q)
+    def _compute_b(self, X: torch.Tensor, pi: torch.Tensor) -> torch.Tensor:
+        """
+        Computex the array of shape (n, Q, n, Q) used in fixed-point iterations.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        pi : torch.Tensor
+            Estimated pi parameters.
+
+        Returns
+        -------
+        torch.Tensor
+            Computed array.
+        """
         n = X.shape[0]
         Q = pi.shape[0]
         repeated_pi = pi.unsqueeze(0).unsqueeze(2).expand(n, -1, n, -1)
@@ -57,7 +168,28 @@ class PytorchImplementation(GenericImplementation):
         b_values[torch.arange(n), :, torch.arange(n), :] = 1
         return b_values
 
-    def fixed_point_iteration(self, tau, X, alpha, pi):
+    def fixed_point_iteration(
+        self, tau: torch.Tensor, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Performs a fixed-point iteration of the E-step.
+
+        Parameters
+        ----------
+        tau : torch.Tensor
+            Current tau matrix.
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+
+        Returns
+        -------
+        torch.Tensor
+            Updated tau matrix.
+        """
         n = X.shape[0]
         b_values = self._compute_b(X, pi)
         tau = alpha.unsqueeze(0).expand(n, -1) * torch.prod(
@@ -67,7 +199,26 @@ class PytorchImplementation(GenericImplementation):
 
         return tau
 
-    def e_step(self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor):
+    def e_step(
+        self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Performs the E-step of the EM algorithm. This method uses fixed-point iterations.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+
+        Returns
+        -------
+        torch.Tensor
+            Updated tau matrix.
+        """
         n = X.shape[0]
         Q = alpha.shape[0]
         n_inits = 0
@@ -100,8 +251,29 @@ class PytorchImplementation(GenericImplementation):
         alpha: torch.Tensor,
         pi: torch.Tensor,
         tau: torch.Tensor,
-        elbo: bool = True,
-    ):
+        elbo: Optional[bool] = True,
+    ) -> torch.Tensor:
+        """
+        Computes the log-likelihood.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+        tau : torch.Tensor
+            Current tau matrix.
+        elbo : bool, optional
+            If True, calculates the evidence lower bound, by default True.
+
+        Returns
+        -------
+        torch.Tensor
+            Log-likelihood value.
+        """
         n = X.shape[0]
         ll = 0
         ll += torch.sum(tau * torch.log(alpha).expand(n, -1), dim=[0, 1])
@@ -116,7 +288,24 @@ class PytorchImplementation(GenericImplementation):
 
     def check_parameters(
         self, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
-    ):
+    ) -> bool:
+        """
+        Checks if the parameters are valid.
+
+        Parameters
+        ----------
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+        tau : torch.Tensor
+            Estimated tau matrix.
+
+        Returns
+        -------
+        bool
+            True if parameters are valid, False otherwise.
+        """
         if torch.any(torch.isnan(alpha)):
             raise ValueError(f"Some alphas are nan")
         if torch.any(torch.isnan(pi)):
@@ -145,7 +334,51 @@ class PytorchImplementation(GenericImplementation):
 
 
 class PytorchLogImplementation(PytorchImplementation):
-    def fixed_point_iteration(self, tau, X, alpha, pi):
+    """
+    PytorchLogImplementation class for the EM algorithm. This class implements the EM algorithm using PyTorch and logs to transform products into sums. This implementation is a bit slower than the PytorchImplementation class but use less memory.
+
+    Methods
+    -------
+    e_step(X, alpha, pi)
+        Performs the E-step of the EM algorithm.
+    init_tau(n, Q)
+        Initializes the tau matrix.
+    m_step(X, tau)
+        Performs the M-step of the EM algorithm.
+    log_likelihood(X, alpha, pi, tau)
+        Computes the log-likelihood.
+    check_parameters(alpha, pi, tau)
+        Checks if the parameters are valid.
+    fixed_point_iteration(tau, X, alpha, pi)
+        Performs a fixed-point iteration of the E-step.
+    input(array)
+        Processes input arrays.
+    output(array)
+        Processes output arrays.
+    """
+
+    def fixed_point_iteration(
+        self, tau: torch.Tensor, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Performs a fixed-point iteration of the E-step.
+
+        Parameters
+        ----------
+        tau : torch.Tensor
+            Current tau matrix.
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+
+        Returns
+        -------
+        torch.Tensor
+            Updated tau matrix.
+        """
         Q = pi.shape[0]
         previous_tau = tau.clone()
         for q in range(Q):
@@ -173,7 +406,26 @@ class PytorchLogImplementation(PytorchImplementation):
 
     def log_likelihood(
         self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
-    ):
+    ) -> float:
+        """
+        Computes the log-likelihood.
+
+        Parameters
+        ----------
+        X : torch.Tensor
+            The adjacency matrix of the graph.
+        alpha : torch.Tensor
+            Estimated alpha parameters.
+        pi : torch.Tensor
+            Estimated pi parameters.
+        tau : torch.Tensor
+            Current tau matrix.
+
+        Returns
+        -------
+        torch.Tensor
+            Log-likelihood value.
+        """
         n = X.shape[0]
         Q = alpha.shape[0]
         ll = 0
