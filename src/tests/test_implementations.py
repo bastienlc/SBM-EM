@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import torch
 
 from ..implementations import (
     NumpyImplementation,
@@ -9,7 +8,11 @@ from ..implementations import (
     PytorchLogImplementation,
     PytorchLowMemoryImplementation,
 )
-from ..utils import b
+
+
+def b(x, pi):
+    return pi**x * (1 - pi) ** (1 - x)
+
 
 n = 10
 Q = 5
