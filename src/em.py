@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -13,14 +13,22 @@ def em_iteration(
     X: Union[np.ndarray, torch.Tensor],
     tau: Union[np.ndarray, torch.Tensor],
 ) -> Tuple[Union[np.ndarray, torch.Tensor], float]:
-    """Performs one iteration of the EM algorithm
-    Args:
-        implementation: the implementation to use
-        X: the adjacence matrix of the graph
-        tau: the current tau
-    Returns:
-        tau: the updated tau
-        ll: the log likelihood
+    """
+    Performs one iteration of the EM algorithm.
+
+    Parameters
+    ----------
+    implementation : GenericImplementation
+        The implementation to use.
+    X : Union[np.ndarray, torch.Tensor]
+        The adjacency matrix of the graph.
+    tau : Union[np.ndarray, torch.Tensor]
+        The current tau.
+
+    Returns
+    -------
+    Tuple[Union[np.ndarray, torch.Tensor], float]
+        A tuple containing the updated tau and the log likelihood.
     """
     alpha, pi = implementation.m_step(X, tau)
     alpha, pi = sort_parameters(alpha, pi)
@@ -36,26 +44,36 @@ def em_iteration(
 def em_algorithm(
     X: np.ndarray,
     Q: int,
-    n_init: int = 10,
-    iterations: int = 100,
-    implementation: str = "pytorch_log",
-    verbose: bool = True,
+    n_init: Optional[int] = 10,
+    iterations: Optional[int] = 100,
+    implementation: Optional[str] = "pytorch_log",
+    verbose: Optional[bool] = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Runs the EM algorithm
-    Args:
-        X: the adjacence matrix of the graph
-        Q: the number of clusters
-        n_init: the number of runs to perform in parallel
-        iterations: the number of EM iterations
-        implementation: the implementation to use
-        verbose: whether to print the log likelihood at each iteration
-    Returns:
-        alpha: the estimated alpha
-        pi: the estimated pi
-        tau: the estimated tau
+    """
+    Runs the EM algorithm.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The adjacency matrix of the graph.
+    Q : int
+        The number of clusters.
+    n_init : int, optional
+        The number of runs to perform in parallel, by default 10.
+    iterations : int, optional
+        The number of EM iterations, by default 100.
+    implementation : str, optional
+        The implementation to use, by default "pytorch_log".
+    verbose : bool, optional
+        Whether to print the log likelihood at each iteration, by default True.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+        A tuple containing the estimated alpha, pi, tau, and log likelihoods.
     """
     try:
-        # Initialisation
+        # Initialization
         impl = get_implementation(implementation)
         n = X.shape[0]
         X = impl.input(X)
@@ -66,8 +84,8 @@ def em_algorithm(
         best_tau, best_ll = None, -np.inf
 
         # EM algorithm
-        for i in range(iterations):
-            for init in inits:
+        for i in range(iterations):  # Iterations of the EM algorithm
+            for init in inits:  # Run each initialisation
                 inits_to_drop = []
 
                 taus[init], log_likelihoods[init, i] = em_iteration(impl, X, taus[init])
@@ -77,7 +95,9 @@ def em_algorithm(
                 ):
                     inits_to_drop.append(init)
 
-                if log_likelihoods[init, i] > best_ll:
+                if (
+                    log_likelihoods[init, i] > best_ll
+                ):  # Keep track of the best likelihood so far
                     best_tau, best_ll = taus[init], log_likelihoods[init, i]
 
             inits = drop_inits(
@@ -86,7 +106,7 @@ def em_algorithm(
                 iterations,
                 log_likelihoods,
                 inits_to_drop=inits_to_drop,
-            )
+            )  # Drop the initialisations that are not performing well, as well as the ones in inits_to_drop
 
             if verbose:
                 print(
@@ -98,6 +118,7 @@ def em_algorithm(
         if verbose:
             print("")
 
+        # If the algorithm ran its course, return the last tau obtained and the associated alpha and pi
         tau = taus[inits[0]]
         alpha, pi = impl.m_step(X, tau)
 
@@ -107,7 +128,9 @@ def em_algorithm(
             impl.output(tau),
             log_likelihoods,
         )
-    except KeyboardInterrupt:
+    except (
+        KeyboardInterrupt
+    ):  # If the user interrupts the algorithm, return the best parameters so far
         if verbose:
             print("")
         alpha, pi = impl.m_step(X, best_tau)
