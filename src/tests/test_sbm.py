@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from ..implementations import (
-    NumpyImplementation,
+from ..implementations.sbm.numpy import NumpyImplementation
+from ..implementations.sbm.pytorch import (
     PytorchImplementation,
     PytorchLogImplementation,
 )

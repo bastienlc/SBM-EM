@@ -1,7 +1,8 @@
-import torch
 import numpy as np
-from src.implementations.generic import GenericImplementation
-from src.constants import *
+import torch
+
+from ...constants import *
+from ..generic import GenericImplementation
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.set_grad_enabled(False)
@@ -11,7 +12,7 @@ torch.set_default_dtype(
 )  # torch.float32 is not precise enough for our needs (nans show up)
 
 
-class Newman_pytorch_implementation(GenericImplementation):
+class PytorchImplementation(GenericImplementation):
     def input(self, array):
         return torch.tensor(array, device=DEVICE, dtype=torch.float64)
 

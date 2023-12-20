@@ -1,18 +1,31 @@
-from typing import Dict
-
-from src.Newman_EM.implementations.newman_torch import Newman_pytorch_implementation
+from typing import Dict, Optional
 
 from .generic import GenericImplementation
-from .numpy import NumpyImplementation
-from .pytorch import PytorchImplementation, PytorchLogImplementation
+from .newman.pytorch import PytorchImplementation as NewmanPytorchImplementation
+from .sbm.numpy import NumpyImplementation as SBMNumpyImplementation
+from .sbm.pytorch import PytorchImplementation as SBMPytorchImplementation
+from .sbm.pytorch import PytorchLogImplementation as SBMPytorchLogImplementation
 
-IMPLEMENTATIONS: Dict[str, GenericImplementation] = {
-    "numpy": NumpyImplementation(),
-    "pytorch": PytorchImplementation(),
-    "pytorch_log": PytorchLogImplementation(),
-    "newman_pytorch": Newman_pytorch_implementation(),
+SBM_IMPLEMENTATIONS: Dict[str, GenericImplementation] = {
+    "numpy": SBMNumpyImplementation(),
+    "pytorch": SBMPytorchImplementation(),
+    "pytorch_log": SBMPytorchLogImplementation(),
+}
+
+NEWMAN_IMPLEMENTATIONS: Dict[str, GenericImplementation] = {
+    "pytorch": NewmanPytorchImplementation(),
 }
 
 
-def get_implementation(implementation: str) -> GenericImplementation:
-    return IMPLEMENTATIONS[implementation]
+def get_implementation(
+    implementation: str, model: Optional[str] = "sbm"
+) -> GenericImplementation:
+    try:
+        if model == "sbm":
+            return SBM_IMPLEMENTATIONS[implementation]
+        elif model == "newman":
+            return NEWMAN_IMPLEMENTATIONS[implementation]
+        else:
+            raise ValueError(f"Unknown model {model}.")
+    except KeyError:
+        raise ValueError(f"Unknown implementation {implementation} for model {model}.")
