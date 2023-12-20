@@ -48,13 +48,28 @@ class NumpyImplementation(GenericImplementation):
     def e_step(self, X, alpha, pi):
         n = X.shape[0]
         Q = alpha.shape[0]
-        tau = self.init_tau(n, Q)
-        for _ in range(MAX_FIXED_POINT_ITERATIONS):
-            previous_tau = np.copy(tau)
-            tau = self.fixed_point_iteration(tau, X, alpha, pi)
+        n_inits = 0
+        norm_change = 1 / EPSILON
+        while norm_change > EPSILON:
+            if n_inits >= MAX_FIXED_POINT_INITS:
+                if RAISE_ERROR_ON_FIXED_POINT:
+                    raise TimeoutError(
+                        f"Fixed points iteration did not converge after {n_inits} initializations."
+                    )
+                else:
+                    print(
+                        f"Fixed points iteration did not converge after {n_inits} initializations. Restarting."
+                    )
+                    n_inits = 0
+            tau = self.init_tau(n, Q)
+            n_inits += 1
+            for _ in range(MAX_FIXED_POINT_ITERATIONS):
+                previous_tau = np.copy(tau)
+                tau = 0.9 * tau + 0.1 * self.fixed_point_iteration(tau, X, alpha, pi)
+                norm_change = np.linalg.norm(previous_tau - tau, ord=1)
 
-            if np.linalg.norm(previous_tau - tau, ord=1) < EPSILON:
-                break
+                if norm_change < EPSILON:
+                    break
         return tau
 
     def log_likelihood(self, X, alpha, pi, tau, elbo=True):
