@@ -17,7 +17,7 @@ NMI: 0.5103680434643215
 Best graph for Rand index: 7
 Rand index: 0.7835350701402806
 Best graph for gt modularity: 7
-True modularity: -0.009161151094399866
+True modularity: 0.07299935112930973
 Pred modularity: 0.06797919558349302
 Best graph for gt modularity: 7
 True modularity: 0.07299935112930973

@@ -186,7 +186,7 @@ def write_report(experiment, implementation="pytorch"):
         best_graph_gt_modularity_idx = passed_graphs[best_graph_gt_modularity]
         report.write(f"Best graph for gt modularity: {best_graph_gt_modularity_idx}\n")
         report.write(
-            f"True modularity: {true_modularities[best_graph_gt_modularity_idx]}\n"
+            f"True modularity: {true_modularities[best_graph_gt_modularity]}\n"
         )
         report.write(
             f"Pred modularity: {pred_modularities[best_graph_gt_modularity]}\n"

@@ -5,7 +5,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def draw_graph(X: np.ndarray, Z: np.ndarray, tight: bool = False) -> None:
+def draw_graph(
+    X: np.ndarray, Z: np.ndarray, tight: bool = False, dense=False, title=None
+) -> None:
     """
     Draws a graph based on the adjacency matrix X and node assignments Z.
 
@@ -27,7 +29,15 @@ def draw_graph(X: np.ndarray, Z: np.ndarray, tight: bool = False) -> None:
             if X[i, j] == 1:
                 G.add_edge(i, j)
     pos = nx.kamada_kawai_layout(G)
-    nx.draw(G, pos, node_size=100 if tight else 300, node_color=np.argmax(Z, axis=1))
+    nx.draw_networkx(
+        G,
+        pos,
+        node_size=100 if tight else 300,
+        width=0.7 if dense else 1,
+        node_color=np.argmax(Z, axis=1),
+        with_labels=False,
+    )
+    plt.title(title)
     plt.show()
 
 
