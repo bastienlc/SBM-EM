@@ -9,7 +9,7 @@ import pandas as pd
 import pickle
 
 from .data import graph_and_params_from_archive, DATA_PATH
-from .em import em_algorithm, DecreasingLogLikelihoodException
+from .em import em_algorithm
 from .metrics import (
     normalized_mutual_information,
     rand_index,
@@ -67,104 +67,144 @@ def compare_elbos(
     return (true_elbo - pred_elbo) / true_elbo
 
 
-def write_results(
-    experiment,
-    successful_clusters,
-    elbo_diffs,
-    nmis,
-    rands,
-    true_modularities,
-    pred_modularities,
-):
-    experiment_path = os.path.join("SBM", f"experiment_{experiment}")
+def write_SBM_pred_results(alpha, pi, tau, path, graph):
     np.savez(
-        os.path.join(RESULTS_PATH, experiment_path, "results.npz"),
-        successful_clusters=successful_clusters,
-        elbo_diffs=elbo_diffs,
-        nmis=nmis,
-        rands=rands,
-        true_modularities=true_modularities,
-        pred_modularities=pred_modularities,
+        os.path.join(RESULTS_PATH, path, f"graph_{graph}_results.npz"),
+        alpha=alpha,
+        pi=pi,
+        tau=tau,
     )
 
 
-def write_report(experiment):
-    experiment_path = os.path.join("SBM", f"experiment_{experiment}")
-    with np.load(os.path.join(RESULTS_PATH, experiment_path, "results.npz")) as results:
-        successful_clusters = results["successful_clusters"]
-        elbo_diffs = results["elbo_diffs"]
-        nmis = results["nmis"]
-        rands = results["rands"]
-        true_modularities = results["true_modularities"]
-        pred_modularities = results["pred_modularities"]
-
-        with open(
-            os.path.join(RESULTS_PATH, experiment_path, "report.txt"), "w"
-        ) as report:
-            report.write(f"Experiment {experiment}\n")
-            report.write(f"Number of graphs passed: {len(successful_clusters)}\n")
-            report.write(
-                f"ELBO difference: {np.mean(elbo_diffs)} +/- {np.std(elbo_diffs)}\n"
-            )
-            report.write(f"NMI: {np.mean(nmis)} +/- {np.std(nmis)}\n")
-            report.write(f"Rand index: {np.mean(rands)} +/- {np.std(rands)}\n")
-            report.write(
-                f"True modularity: {np.mean(true_modularities)} +/- {np.std(true_modularities)}\n"
-            )
-            report.write(
-                f"Pred modularity: {np.mean(pred_modularities)} +/- {np.std(pred_modularities)}\n"
-            )
-            report.write("\n")
-
-            report.write("Metrics with best graph:\n")
-            best_graph_elbo = np.argmax(elbo_diffs)
-            best_graph_elbo_idx = successful_clusters[best_graph_elbo]
-            report.write(f"Best graph for elbo: {best_graph_elbo_idx}\n")
-            report.write(f"ELBO difference: {elbo_diffs[best_graph_elbo]}\n")
-            best_graph_nmi = np.argmax(nmis)
-            best_graph_nmi_idx = successful_clusters[best_graph_nmi]
-            report.write(f"Best graph for NMI: {best_graph_nmi_idx}\n")
-            report.write(f"NMI: {nmis[best_graph_nmi]}\n")
-            best_graph_rand = np.argmax(rands)
-            best_graph_rand_idx = successful_clusters[best_graph_rand]
-            report.write(f"Best graph for Rand index: {best_graph_rand_idx}\n")
-            report.write(f"Rand index: {rands[best_graph_rand]}\n")
-            best_graph_modularity = np.argmax(
-                np.abs(true_modularities) - np.abs(pred_modularities)
-            )
-            best_graph_modularity_idx = successful_clusters[best_graph_modularity]
-            report.write(
-                f"Best graph for absolute difference in modularity: {best_graph_modularity_idx}\n"
-            )
-            report.write(
-                f"True modularity: {true_modularities[best_graph_modularity]}\n"
-            )
-            report.write(
-                f"Pred modularity: {pred_modularities[best_graph_modularity]}\n"
-            )
+def load_SBM_pred_results(path, graph):
+    with np.load(
+        os.path.join(RESULTS_PATH, path, f"graph_{graph}_results.npz")
+    ) as data:
+        alpha = data["alpha"]
+        pi = data["pi"]
+        tau = data["tau"]
+    return alpha, pi, tau
 
 
-def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytorch"):
+def write_report(experiment, implementation="pytorch"):
     experiment_path = os.path.join("SBM", f"experiment_{experiment}")
     with np.load(os.path.join(DATA_PATH, experiment_path, "params.npz")) as params:
         n_graphs = params["n_graphs"]
         n = params["n"]
         Q = params["Q"]
 
-    successful_clusters = []
     elbo_diffs = []
+    param_distances = []
     nmis = []
     rands = []
     true_modularities = []
     pred_modularities = []
     for graph_idx in range(n_graphs):
+        X, Z, alpha, pi = graph_and_params_from_archive(
+            os.path.join(experiment_path, f"graph_{graph_idx}.npz")
+        )
+        alpha_pred, pi_pred, tau_pred = load_SBM_pred_results(
+            experiment_path, graph_idx
+        )
+        passed_graphs = np.load(
+            os.path.join(RESULTS_PATH, experiment_path, "passed_graphs.npy")
+        )
+
+        # Fitting quality metrics
+        elbo_diffs.append(
+            IMPLEMENTATIONS[implementation].output(
+                compare_elbos(
+                    X,
+                    alpha,
+                    pi,
+                    Z,
+                    alpha_pred,
+                    pi_pred,
+                    tau_pred,
+                    implementation=implementation,
+                )
+            )
+        )
+        dist_alpha = np.linalg.norm(alpha - alpha_pred) / Q
+        dist_pi = np.linalg.norm(pi - pi_pred) / (Q**2)
+        param_distances.append(dist_alpha + dist_pi)
+
+        # Clustering quality metrics
+        true_labels = np.argmax(Z, axis=1)
+        pred_labels = np.argmax(tau_pred, axis=1)
+        nmis.append(normalized_mutual_information(true_labels, pred_labels))
+        rands.append(rand_index(true_labels, pred_labels))
+        true_clustering = np.array([true_labels == q for q in range(Q)])
+        pred_clustering = np.array([pred_labels == q for q in range(Q)])
+        true_modularities.append(modularity(X, true_clustering))
+        pred_modularities.append(modularity(X, pred_clustering))
+    param_distances = np.array(param_distances)
+    elbo_diffs = np.array(elbo_diffs)
+    nmis = np.array(nmis)
+    rands = np.array(rands)
+    true_modularities = np.array(true_modularities)
+    pred_modularities = np.array(pred_modularities)
+
+    with open(os.path.join(RESULTS_PATH, experiment_path, "report.txt"), "w") as report:
+        report.write(f"Experiment {experiment}\n")
+        report.write(f"Number of graphs passed: {len(passed_graphs)}\n")
+        report.write(
+            f"Params distance: {np.mean(param_distances)} +/- {np.std(param_distances)}\n"
+        )
+        report.write(
+            f"ELBO difference: {np.mean(elbo_diffs)} +/- {np.std(elbo_diffs)}\n"
+        )
+        report.write(f"NMI: {np.mean(nmis)} +/- {np.std(nmis)}\n")
+        report.write(f"Rand index: {np.mean(rands)} +/- {np.std(rands)}\n")
+        report.write(
+            f"True modularity: {np.mean(true_modularities)} +/- {np.std(true_modularities)}\n"
+        )
+        report.write(
+            f"Pred modularity: {np.mean(pred_modularities)} +/- {np.std(pred_modularities)}\n"
+        )
+        report.write("\n")
+
+        report.write("Metrics with best graphs:\n")
+        best_graph_param_distance = np.argmax(param_distances)
+        best_graph_distance_param = passed_graphs[best_graph_param_distance]
+        report.write(f"Best graph for params distance: {best_graph_distance_param}\n")
+        report.write(f"Params distance: {param_distances[best_graph_distance_param]}\n")
+        best_graph_elbo = np.argmax(elbo_diffs)
+        best_graph_elbo_idx = passed_graphs[best_graph_elbo]
+        report.write(f"Best graph for elbo: {best_graph_elbo_idx}\n")
+        report.write(f"ELBO difference: {elbo_diffs[best_graph_elbo]}\n")
+        best_graph_nmi = np.argmax(nmis)
+        best_graph_nmi_idx = passed_graphs[best_graph_nmi]
+        report.write(f"Best graph for NMI: {best_graph_nmi_idx}\n")
+        report.write(f"NMI: {nmis[best_graph_nmi]}\n")
+        best_graph_rand = np.argmax(rands)
+        best_graph_rand_idx = passed_graphs[best_graph_rand]
+        report.write(f"Best graph for Rand index: {best_graph_rand_idx}\n")
+        report.write(f"Rand index: {rands[best_graph_rand]}\n")
+        best_graph_modularity = np.argmax(true_modularities)
+        best_graph_modularity_idx = passed_graphs[best_graph_modularity]
+        report.write(f"Best graph for gt modularity: {best_graph_modularity_idx}\n")
+        report.write(f"True modularity: {true_modularities[best_graph_modularity]}\n")
+        report.write(f"Pred modularity: {pred_modularities[best_graph_modularity]}\n")
+
+
+def launch_experiment(experiment=1, n_init=5, n_iter=100, implementation="pytorch"):
+    experiment_path = os.path.join("SBM", f"experiment_{experiment}")
+    with np.load(os.path.join(DATA_PATH, experiment_path, "params.npz")) as params:
+        n_graphs = params["n_graphs"]
+        n = params["n"]
+        Q = params["Q"]
+
+    passed_graphs = []
+
+    for graph_idx in range(n_graphs):
         try:
             if (n_graphs >= 10) and graph_idx % (n_graphs // 10) == 0:
                 print(f"{(100*graph_idx)//n_graphs}% complete...")
-            X, Z, alpha, pi = graph_and_params_from_archive(
+            X, Z, _, _ = graph_and_params_from_archive(
                 os.path.join(experiment_path, f"graph_{graph_idx}.npz")
             )
-            alpha_pred, pi_pred, tau_pred = em_algorithm(
+            alpha_pred, pi_pred, tau_pred, _ = em_algorithm(
                 X,
                 Q=Q,
                 n_init=n_init,
@@ -172,81 +212,22 @@ def launch_experiment(experiment=1, n_init=10, n_iter=200, implementation="pytor
                 implementation=implementation,
                 verbose=False,
             )
-            successful_clusters.append(graph_idx)
+            passed_graphs.append(graph_idx)
             tau_pred = rearrange_tau(tau_pred, np.argmax(Z, axis=1), Q)
-
-            # Fitting quality metrics
-            elbo_diffs.append(
-                IMPLEMENTATIONS[implementation].output(
-                    compare_elbos(
-                        X,
-                        alpha,
-                        pi,
-                        Z,
-                        alpha_pred,
-                        pi_pred,
-                        tau_pred,
-                        implementation=implementation,
-                    )
-                )
+            write_SBM_pred_results(
+                alpha=alpha_pred,
+                pi=pi_pred,
+                tau=tau_pred,
+                path=experiment_path,
+                graph=graph_idx,
             )
-
-            # Clustering quality metrics
-            true_labels = np.argmax(Z, axis=1)
-            pred_labels = np.argmax(tau_pred, axis=1)
-            nmis.append(normalized_mutual_information(true_labels, pred_labels))
-            rands.append(rand_index(true_labels, pred_labels))
-            true_clustering = np.array([true_labels == q for q in range(Q)])
-            pred_clustering = np.array([pred_labels == q for q in range(Q)])
-            true_modularities.append(modularity(X, true_clustering))
-            pred_modularities.append(modularity(X, pred_clustering))
-        except DecreasingLogLikelihoodException:
-            print("!! Skipped one graph due to decreasing log likelihood !!")
+        except:
+            print("!! Skipped one graph due to error in em algorithm !!")
             continue
 
-    elbo_diffs = np.array(elbo_diffs)
-    nmis = np.array(nmis)
-    rands = np.array(rands)
-    true_modularities = np.array(true_modularities)
-    pred_modularities = np.array(pred_modularities)
-    write_results(
-        experiment,
-        successful_clusters,
-        elbo_diffs,
-        nmis,
-        rands,
-        true_modularities,
-        pred_modularities,
+    np.save(
+        os.path.join(RESULTS_PATH, experiment_path, "passed_graphs.npy"), passed_graphs
     )
-
-
-def initialization_sensitivity(n_init, n_iter=100, implementation="pytorch"):
-    # edges_data = "data/cora/cora.cites"
-
-    # with open(edges_data) as edgelist:
-    #     G = nx.read_edgelist(edgelist)
-    # X = nx.adjacency_matrix(G).todense()
-    # Q = 7
-
-    X, Z, _, _ = graph_and_params_from_archive(f"sample_graph.npz")
-    Q = Z.shape[1]
-    for i in range(n_init):
-        print(f"Initialization {i+1}/{n_init}...")
-        ll_log = em_algorithm(
-            X,
-            Q=Q,
-            n_init=1,
-            iterations=n_iter,
-            implementation=implementation,
-            verbose=False,
-            diagnostic=True,
-        )
-        plt.plot(np.arange(n_iter), ll_log)
-    plt.xlabel("EM iteration")
-    plt.xscale("log")
-    plt.ylabel("Log likelihood")
-    plt.title(f"Log likelihood for {n_init} initializations")
-    plt.show()
 
 
 # Experiments on real datasets

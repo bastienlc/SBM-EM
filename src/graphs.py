@@ -36,8 +36,7 @@ def random_graph(n=None, Q=None, occupation=0.5):
         n = np.random.randint(2, 100)
     if Q is None:
         Q = np.random.randint(2, n // 10)
-    alpha = np.random.rand(Q)
-    alpha = alpha / np.sum(alpha)
+    alpha = np.random.dirichlet([1.5] * Q)
     pi = np.random.rand(Q, Q)
     pi = pi @ np.transpose(pi)
     pi = pi / np.sum(pi, axis=0) * occupation

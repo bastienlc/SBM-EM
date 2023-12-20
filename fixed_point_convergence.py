@@ -1,3 +1,5 @@
+import os
+import numpy as np
 import torch
 from matplotlib import pyplot as plt
 
@@ -8,90 +10,98 @@ from src.utils import sort_parameters
 from src.data import graph_and_params_from_archive
 
 
-IMPLEMENTATION = IMPLEMENTATIONS["pytorch"]
+IMAGE_PATH = "images/"
 
 
-n = 300
-Q = 3
-# X, Z, alpha, pi = graph_and_params_from_archive(f"sample_graph.npz")
-# X, Z, alpha, pi = map(IMPLEMENTATION.input, [X, Z, alpha, pi])
-# # X is a graph with 300 nodes and 3 communities, with
-# # alpha = [0.33333333 0.33333333 0.33333333]
-# # and pi = [[0.9  0.02 0.02]
-# #           [0.02 0.9  0.02]
-# #           [0.02 0.02 0.9 ]]
-
-
-def random_init(n, Q):
-    X, Z, alpha, pi = random_graph(n, Q)
-    X, Z, alpha, pi = map(IMPLEMENTATION.input, [X, Z, alpha, pi])
+def random_init(n, Q, implementation=IMPLEMENTATIONS["pytorch"]):
+    X, _, alpha, pi = random_graph(n, Q)
+    X, alpha, pi = map(implementation.input, [X, alpha, pi])
     alpha, pi = sort_parameters(alpha, pi)
-    tau = IMPLEMENTATION.init_tau(n, Q)
+    tau = implementation.init_tau(n, Q)
     return (tau, X, alpha, pi)
 
 
-n_paths = 50
-n_iterations = 100
+def run_parallel_fixed_point_iterations(
+    n_paths=50,
+    n_iterations=100,
+    X_fixed=None,
+    alpha_fixed=None,
+    pi_fixed=None,
+    tau_fixed=None,
+    implementation=IMPLEMENTATIONS["pytorch"],
+):
+    assert (X_fixed is None and alpha_fixed is None and pi_fixed is None) or (
+        X_fixed is not None and alpha_fixed is not None and pi_fixed is not None
+    )
+    assert not (
+        (X_fixed is None and tau_fixed is None)
+        or (X_fixed is not None and tau_fixed is not None)
+    )
+    paths_tau_diff = []
+    converged_paths = np.zeros(n_paths, dtype=bool)
+    for path in range(n_paths):
+        if path % 10 == 0:
+            print(f"{path}/{n_paths}")
+        if X_fixed is None:
+            tau, X, alpha, pi = random_init(n, Q, implementation=implementation)
+        else:
+            X = X_fixed
+            alpha = alpha_fixed
+            pi = pi_fixed
+        if tau_fixed is None:
+            tau = implementation.init_tau(n, Q)
+        else:
+            tau = tau_fixed
+        path_tau_diff = []
+        for _ in range(n_iterations):
+            previous_tau = tau.clone()
+            tau = implementation.fixed_point_iteration(tau, X, alpha, pi)
+            path_tau_diff.append(torch.linalg.norm(previous_tau - tau, ord=1).item())
+            if path_tau_diff[-1] < EPSILON:
+                converged_paths[path] = True
+                break
+        paths_tau_diff.append(path_tau_diff)
+
+    for k in range(n_paths):
+        converged = converged_paths[k]
+        plt.plot(
+            list(range(1, len(paths_tau_diff[k]) + 1)),
+            paths_tau_diff[k],
+            color="tab:green" if converged else "tab:red",
+        )
+    plt.xscale("log")
+    plt.title(r"Norm change for $\tau$ between each fixed point iteration")
+    plt.xlabel("Iteration")
+    plt.ylabel(r"$\|\tau_n - \tau_{n-1}\|$")
+    if X_fixed is None:
+        plt.savefig(
+            os.path.join(IMAGE_PATH, "fixed_point_convergence_fixed_tau.png"), dpi=600
+        )
+    if tau_fixed is None:
+        plt.savefig(
+            os.path.join(IMAGE_PATH, "fixed_point_convergence_fixed_X_alpha_pi.png"),
+            dpi=600,
+        )
+    plt.show()
+    plt.close()
 
 
-torch.random.manual_seed(1)
-paths_tau_diff = []
-paths_elbo = []
-for path in range(n_paths):
-    if path % 10 == 0:
-        print(f"{path}/{n_paths}")
-    tau, X, alpha, pi = random_init(n, Q)
-    # tau = IMPLEMENTATION.init_tau(n, Q)
-    path_tau_diff = []
-    path_elbo = []
-    for _ in range(n_iterations):
-        previous_tau = tau.clone()
-        tau = IMPLEMENTATION.fixed_point_iteration(tau, X, alpha, pi)
-        path_tau_diff.append(torch.linalg.norm(previous_tau - tau, ord=1).item())
-        path_elbo.append(IMPLEMENTATION.log_likelihood(X, alpha, pi, tau).item())
-        if path_tau_diff[-1] < EPSILON:
-            break
-    if len(path_tau_diff) == n_iterations:
-        values_to_study = (X, alpha, pi)
-    paths_tau_diff.append(path_tau_diff)
-    paths_elbo.append(path_elbo)
+if __name__ == "__main__":
+    IMPLEMENTATION = IMPLEMENTATIONS["pytorch"]
 
-for k in range(n_paths):
-    plt.plot(list(range(1, len(paths_tau_diff[k]) + 1)), paths_tau_diff[k])
-plt.xscale("log")
-plt.title("Norm change between each fixed point iteration")
-# plt.savefig("fixed_point_convergence.png", dpi=600)
-plt.savefig("test_tau.png", dpi=600)
-plt.close()
+    n = 100
+    Q = 3
 
-for k in range(n_paths):
-    plt.plot(list(range(1, len(paths_elbo[k]) + 1)), paths_elbo[k])
-plt.xscale("log")
-plt.title("Elbo")
-# plt.savefig("fixed_point_convergence.png", dpi=600)
-plt.savefig("test_elbo.png", dpi=600)
+    X, alpha, pi = None, None, None
+    # _, X, alpha, pi = random_init(n, Q, IMPLEMENTATION)
+    # tau = None
+    tau = IMPLEMENTATION.init_tau(n, Q)
 
-
-# Either we converge very fast or we don't converge at all
-# -> Do multiple inits.
-
-# # Are we strugling to converge because of the initialization of tau or because of pi and alpha ?
-# X, alpha, pi = values_to_study
-# paths = []
-# for _ in range(n_paths):
-#     tau = init_tau(n, Q)
-#     path_tau_diff = []
-#     for _ in range(n_iterations):
-#         previous_tau = tau.clone()
-#         tau = fixed_point_iteration(tau, X, alpha, pi)
-#         path_tau_diff.append(torch.linalg.norm(previous_tau - tau, ord=1).item())
-#         if path_tau_diff[-1] < EPSILON:
-#             break
-#     paths.append(path_tau_diff)
-
-# for k in range(n_paths):
-#     plt.plot(list(range(1, len(paths[k]) + 1)), paths[k])
-
-# plt.xscale("log")
-# plt.title("Norm change between each fixed point iteration")
-# plt.savefig("fixed_point_convergence_defavorable.png", dpi=600)
+    run_parallel_fixed_point_iterations(
+        n_paths=50,
+        X_fixed=X,
+        alpha_fixed=alpha,
+        pi_fixed=pi,
+        tau_fixed=tau,
+        implementation=IMPLEMENTATION,
+    )
