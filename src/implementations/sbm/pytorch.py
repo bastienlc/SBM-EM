@@ -290,7 +290,7 @@ class PytorchImplementation(GenericImplementation):
         self, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
     ) -> bool:
         """
-        Checks if the parameters are valid.
+        Checks if the parameters are valid. This method may raise a ValueError if the parameters are not valid.
 
         Parameters
         ----------
