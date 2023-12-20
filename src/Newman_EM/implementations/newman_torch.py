@@ -36,7 +36,7 @@ class Newman_pytorch_implementation(GenericImplementation):
         # q : n x Q
         # theta : Q x n
 
-        B = torch.einsum('ij,rj -> ir', X, torch.log(pi + 1e-6))
+        B = torch.einsum("ij,rj -> ir", X, torch.log(pi + 1e-6))
         B = torch.log(alpha)[None, :] + B
         B = torch.multiply(B, tau)
         B = torch.sum(B)
@@ -48,20 +48,22 @@ class Newman_pytorch_implementation(GenericImplementation):
         # theta : Q x n
         C = 10
 
-        tau = torch.log(alpha + 1e-6) + torch.einsum('ij,rj -> ir', X, torch.log(pi + 1e-6))
-        max_tau = torch.max(tau, axis = 1).values
+        tau = torch.log(alpha + 1e-6) + torch.einsum(
+            "ij,rj -> ir", X, torch.log(pi + 1e-6)
+        )
+        max_tau = torch.max(tau, axis=1).values
         # max_tau = max_tau.values
         # max_tau = max_tau.cpu().detach().numpy()
-        min_tau = torch.min(tau, axis = 1).values
+        min_tau = torch.min(tau, axis=1).values
         # min_tau = min_tau.values
         # min_tau = min_tau.cpu().detach().numpy()
-        mask_tau_min = min_tau < -500.
+        mask_tau_min = min_tau < -500.0
         max_tau = max_tau[mask_tau_min]
         min_tau = min_tau[mask_tau_min]
-        ranges = torch.stack([max_tau, min_tau], axis = 1)
+        ranges = torch.stack([max_tau, min_tau], axis=1)
         # print(ranges[ranges[:, 1] - ranges[:, 0] > 500.])
         C = torch.zeros(tau.shape[0], device=DEVICE, dtype=torch.float64)
-        C[mask_tau_min] = - max_tau
+        C[mask_tau_min] = -max_tau
         # print(C[mask_tau_min])
         tau = tau + C[:, None]
         tau = torch.exp(tau)
@@ -96,7 +98,7 @@ class Newman_pytorch_implementation(GenericImplementation):
             print("tau", tau[exple_tau_nan[0], exple_tau_nan[1]])
             term11 = torch.log(alpha[exple_tau_nan[1]] + 1e-6)
             print("term11 : ", term11)
-            term12 =  X[exple_tau_nan[0], :] * torch.log(pi[exple_tau_nan[1], :] + 1e-6)
+            term12 = X[exple_tau_nan[0], :] * torch.log(pi[exple_tau_nan[1], :] + 1e-6)
             print("term12 : ", term12)
             term13 = torch.sum(term12)
             print("term13 : ", term13)
@@ -108,7 +110,7 @@ class Newman_pytorch_implementation(GenericImplementation):
             print("term3 : ", term3)
             term4 = torch.exp(term3)
             print("term4 : ", term4)
-        else :
+        else:
             # print(f"tau is not nan")
             pass
         return tau
@@ -118,10 +120,14 @@ class Newman_pytorch_implementation(GenericImplementation):
         # pi : Q
         # q : n x Q
         alpha = torch.mean(tau, axis=0)
-        pi = torch.einsum('ij,ir -> rj', X, tau) / torch.einsum('ij,ir -> r', X, tau)[:, None]
+        pi = (
+            torch.einsum("ij,ir -> rj", X, tau)
+            / torch.einsum("ij,ir -> r", X, tau)[:, None]
+        )
 
         return alpha, pi
-    def parameters_are_ok(
+
+    def check_parameters(
         self, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
     ):
         if torch.any(torch.isnan(alpha)):

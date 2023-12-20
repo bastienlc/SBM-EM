@@ -72,7 +72,7 @@ class NumpyImplementation(GenericImplementation):
         ll += 1 / 2 * np.einsum("iq,jl,iqjl->", tau, tau, log_b_values)
         return ll
 
-    def parameters_are_ok(self, alpha, pi, tau):
+    def check_parameters(self, alpha, pi, tau):
         if np.abs(np.sum(alpha) - 1) > PRECISION:
             return False
         if np.any(alpha < 0):

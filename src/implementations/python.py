@@ -84,7 +84,7 @@ class PythonImplementation(GenericImplementation):
                             )
         return ll
 
-    def parameters_are_ok(self, alpha, pi, tau):
+    def check_parameters(self, alpha, pi, tau):
         if np.abs(np.sum(alpha) - 1) > PRECISION:
             return False
         if np.any(alpha < 0):
