@@ -8,6 +8,7 @@ from ..metrics import (
     rand_index,
     clustering_coefficient,
     modularity,
+    modularity_v2,
 )
 
 n = 5
@@ -65,5 +66,9 @@ class TestMetrics:
             clustering.append(cluster_mask)
         assert (
             abs(nx.community.modularity(G, clustering_nx) - modularity(X, clustering))
+            < close_epsilon
+        )
+        assert (
+            abs(modularity_v2(X, clustering_nx) - modularity(X, clustering))
             < close_epsilon
         )

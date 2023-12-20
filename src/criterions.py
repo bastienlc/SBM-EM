@@ -1,16 +1,46 @@
+from typing import Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .implementations import IMPLEMENTATIONS
 from .em import em_algorithm
+from .implementations import get_implementation
 
 
-def ICL_criterion(Q, X, alpha, pi, tau, implementation="pytorch"):
-    implementation = IMPLEMENTATIONS[implementation]
-    X, alpha, pi, tau = map(implementation.input, [X, alpha, pi, tau])
-    max_ll = implementation.output(
-        implementation.log_likelihood(X, alpha, pi, tau, elbo=False)
-    )
+def ICL_criterion(
+    Q: int,
+    X: np.ndarray,
+    alpha: np.ndarray,
+    pi: np.ndarray,
+    tau: np.ndarray,
+    implementation: str = "pytorch",
+) -> float:
+    """
+    Computes the ICL (Integrated Complete-data Likelihood) criterion.
+
+    Parameters
+    ----------
+    Q : int
+        The number of classes.
+    X : np.ndarray
+        The adjacency matrix of the graph.
+    alpha : np.ndarray
+        Estimated alpha.
+    pi : np.ndarray
+        Estimated pi.
+    tau : np.ndarray
+        Estimated tau.
+    implementation : str, optional
+        The implementation to use, by default "pytorch".
+
+    Returns
+    -------
+    float
+        The ICL criterion value.
+    """
+    impl = get_implementation(implementation)
+    X, alpha, pi, tau = map(impl.input, [X, alpha, pi, tau])
+    max_ll = impl.output(impl.log_likelihood(X, alpha, pi, tau, elbo=False))
     n = X.shape[0]
     return (
         max_ll
@@ -20,14 +50,38 @@ def ICL_criterion(Q, X, alpha, pi, tau, implementation="pytorch"):
 
 
 def draw_criterion(
-    X,
-    min_Q=1,
-    max_Q=20,
-    em_n_init=10,
-    em_iterations=100,
-    implementation="pytorch",
-    verbose=True,
-):
+    X: np.ndarray,
+    min_Q: int = 1,
+    max_Q: int = 20,
+    em_n_init: int = 10,
+    em_iterations: int = 100,
+    implementation: str = "pytorch",
+    verbose: Optional[bool] = True,
+) -> None:
+    """
+    Draws the ICL criterion plot for different numbers of classes.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The adjacency matrix of the graph.
+    min_Q : int, optional
+        The minimum number of classes, by default 1.
+    max_Q : int, optional
+        The maximum number of classes, by default 20.
+    em_n_init : int, optional
+        The number of runs to perform in parallel during EM algorithm, by default 10.
+    em_iterations : int, optional
+        The number of EM iterations, by default 100.
+    implementation : str, optional
+        The implementation to use, by default "pytorch".
+    verbose : bool, optional
+        Whether to print progress information, by default True.
+
+    Returns
+    -------
+    None
+    """
     y = []
     Q_list = list(range(min_Q, max_Q + 1))
     for Q in Q_list:
