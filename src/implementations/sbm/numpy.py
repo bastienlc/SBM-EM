@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..constants import *
-from .generic import GenericImplementation
+from ...constants import *
+from ..generic import GenericImplementation
 
 
 class NumpyImplementation(GenericImplementation):

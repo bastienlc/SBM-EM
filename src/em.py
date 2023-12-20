@@ -47,6 +47,7 @@ def em_algorithm(
     n_init: Optional[int] = 10,
     iterations: Optional[int] = 100,
     implementation: Optional[str] = "pytorch_log",
+    model: Optional[str] = "sbm",
     verbose: Optional[bool] = True,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -64,6 +65,8 @@ def em_algorithm(
         The number of EM iterations, by default 100.
     implementation : str, optional
         The implementation to use, by default "pytorch_log".
+    model : str, optional
+        The model to use, by default "sbm" the Stochastic Block Model.
     verbose : bool, optional
         Whether to print the log likelihood at each iteration, by default True.
 
@@ -74,7 +77,7 @@ def em_algorithm(
     """
     try:
         # Initialization
-        impl = get_implementation(implementation)
+        impl = get_implementation(implementation, model=model)
         n = X.shape[0]
         X = impl.input(X)
         taus = [impl.init_tau(n, Q) for _ in range(n_init)]
