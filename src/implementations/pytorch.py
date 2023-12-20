@@ -144,47 +144,6 @@ class PytorchImplementation(GenericImplementation):
         return True
 
 
-class PytorchLowMemoryImplementation(PytorchImplementation):
-    def _partial_compute_b(self, X: torch.Tensor, pi: torch.Tensor):
-        # returns a tensor of shape (n, Q, Q)
-        n = X.shape[0]
-        Q = pi.shape[0]
-        repeated_pi = pi.unsqueeze(0).expand(n, -1, -1)
-        repeated_X = X.unsqueeze(1).unsqueeze(2).expand(-1, Q, Q)
-        b_values = repeated_pi**repeated_X * (1 - repeated_pi) ** (1 - repeated_X)
-
-        return b_values
-
-    def fixed_point_iteration(self, tau, X, alpha, pi):
-        n = X.shape[0]
-        Q = pi.shape[0]
-        previous_tau_repeated = tau.clone().unsqueeze(1).expand(-1, Q, -1)
-        for i in range(n):
-            b_values = self._partial_compute_b(X[i, :], pi)
-            b_values[i, :, :] = 1
-            tau[i, :] = alpha * torch.prod(
-                torch.prod(torch.pow(b_values, previous_tau_repeated), dim=2), dim=0
-            )
-
-        tau /= torch.sum(tau, dim=1, keepdim=True)
-
-        return tau
-
-    def log_likelihood(
-        self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
-    ):
-        n = X.shape[0]
-        ll = 0
-        ll += torch.sum(tau * torch.log(alpha).expand(n, -1), dim=[0, 1])
-        ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
-        for i in range(n):
-            b_values = self._partial_compute_b(X[i, :], pi)
-            b_values[i, :, :] = 1
-            log_b_values = torch.log(b_values)
-            ll += 1 / 2 * torch.einsum("q,jl,jql->", tau[i, :], tau, log_b_values)
-        return ll
-
-
 class PytorchLogImplementation(PytorchImplementation):
     def fixed_point_iteration(self, tau, X, alpha, pi):
         Q = pi.shape[0]
