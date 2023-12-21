@@ -330,7 +330,7 @@
 
     All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) was implemented in Python using Numpy, and later in Pytorch to distribute the computations on a GPU. A second Pytorch implementation was added to handle memory issues occurring for large graphs. The Newman variant was directly implemented in Pytorch. As an indication, a speed comparison \textcolor{red}{Est-elle à jour ?} between the versions of the mixture model is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report. %due to a lack of time and to avoid exploring too many directions
 
-    The implementation also comes with a battery of tests to validate the implementations, as well as scripts and notebooks to reproduce and visualize the experiments. All experiences used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case.
+    The implementation also comes with a battery of tests to validate the implementations, as well as scripts and notebooks to reproduce and visualize the experiments. All experiences used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case. For visualizations, we used the Networkx library.
 
     \subsection{Robustness of the fixed-point algorithm}
     \label{subsec:robustness}
@@ -413,14 +413,14 @@
         \setlength\heavyrulewidth{0.25ex}
         \begin{tabular}{@{}cccccc@{}}
             \toprule
-            \multicolumn{2}{c}{\textbf{Experiment}} & \multicolumn{2}{c}{\textbf{Hyper-parameters}} & \multicolumn{2}{c}{\textbf{Parameters}}                                                                                                                                                     \\
-            \#                                      & Name                                          & $n$                                     & $Q$                    & $\alpha$                                  & $\pi$                                                                        \\ \midrule
-            1                                       & \multicolumn{1}{c|}{Random-small}             & 30                                      & \multicolumn{1}{c|}{3} & $\alpha \sim \text{Dir}(1.5)$             & $\pi_{ij} \sim \mathcal{U}([0, 1))$                                          \\
-            2                                       & \multicolumn{1}{c|}{Random-large}             & 500                                     & \multicolumn{1}{c|}{3} & $\alpha \sim \text{Dir}(1.5)$             & $\pi_{ij} \sim \mathcal{U}([0, 1))$                                          \\
-            3                                       & \multicolumn{1}{c|}{Homophilic}               & 150                                     & \multicolumn{1}{c|}{3} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$                     \\
-            4                                       & \multicolumn{1}{c|}{Homophilic-hard}          & 150                                     & \multicolumn{1}{c|}{5} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} \sim \mathcal{U}([0.5, 1)), \ \pi_{ij} = \varepsilon_2$            \\
-            5                                       & \multicolumn{1}{c|}{High-degree-minority}     & 150                                     & \multicolumn{1}{c|}{2} & $\alpha^T = (\frac{9}{10}, \frac{1}{10})$ & $\pi = \begin{pmatrix} \varepsilon_1 & a \\ \varepsilon_2 & b \end{pmatrix}$ \\
-            6                                       & \multicolumn{1}{c|}{Heterophilic}             & 150                                     & \multicolumn{1}{c|}{3} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} = \varepsilon_2, \ \pi_{ij} = 1 - \varepsilon_1$                   \\ \bottomrule
+            \multicolumn{2}{c}{\textbf{Experiment}} & \multicolumn{2}{c}{\textbf{Hyper-parameters}} & \multicolumn{2}{c}{\textbf{Parameters}}                                                                                                                                          \\
+            \#                                      & Name                                          & $n$                                     & $Q$                    & $\alpha$                                  & $\pi$                                                             \\ \midrule
+            1                                       & \multicolumn{1}{c|}{Random-small}             & 30                                      & \multicolumn{1}{c|}{3} & $\alpha \sim \text{Dir}(1.5)$             & $\pi_{ij} \sim \mathcal{U}([0, 1))$                               \\
+            2                                       & \multicolumn{1}{c|}{Random-large}             & 500                                     & \multicolumn{1}{c|}{3} & $\alpha \sim \text{Dir}(1.5)$             & $\pi_{ij} \sim \mathcal{U}([0, 1))$                               \\
+            3                                       & \multicolumn{1}{c|}{Homophilic}               & 150                                     & \multicolumn{1}{c|}{3} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$          \\
+            4                                       & \multicolumn{1}{c|}{Homophilic-hard}          & 150                                     & \multicolumn{1}{c|}{5} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} \sim \mathcal{U}([0.5, 1)), \ \pi_{ij} = \varepsilon_2$ \\
+            5                                       & \multicolumn{1}{c|}{High-degree-minority}     & 150                                     & \multicolumn{1}{c|}{2} & $\alpha^T = (\frac{9}{10}, \frac{1}{10})$ & $\pi = \begin{pmatrix} \varepsilon_2 & a \\ a & b \end{pmatrix}$  \\
+            6                                       & \multicolumn{1}{c|}{Heterophilic}             & 150                                     & \multicolumn{1}{c|}{3} & $\alpha_i = (\frac{1}{Q})_i$              & $\pi_{ii} = \varepsilon_2, \ \pi_{ij} = 1 - \varepsilon_1$        \\ \bottomrule
         \end{tabular}
         \caption{Parameters used for the generation of the SBM dataset.}
         \label{tab:sbm_parameters}
@@ -460,7 +460,7 @@
 
     \subsection{Comparison to variants}
 
-    In the last set of experiments, the mixture model-based method \cite{main_article} described in Section \ref{subsec:mixture_model} is tested on real graphs and compared with 2 other methods:
+    In the last set of experiments, the Daudin-EM method \cite{main_article} described in Section \ref{subsec:mixture_model} is tested on real graphs and compared with 2 other methods:
     \begin{enumerate}
         \item The alternative mixture model from \cite{newman} described in section \ref{subsec:newman};
         \item The spectral clustering method from \cite{spectral} described in section \ref{subsec:spectral}.
@@ -471,12 +471,13 @@
     These methods are all tested on 2 famous datasets, commonly used as benchmarks for community detection algorithms:
     \begin{enumerate}
         \item Zachary's Karate-club dataset: Published in an Anthropology journal in 1977 \cite{karate}, it describes the friendship between 34 members of a karate club at a US university after an internal dispute that split the social relationships in two factions. The graph is undirected and contains 34 nodes and 78 edges. Figure \ref{fig:zachary_gt} shows the ground truth of the dataset.
-        \item The Cora dataset: A citation network of scientific publications \cite{cora}. The graph is undirected and contains 2708 nodes(=papers) and 5429 edges(=citations). The nodes are labeled with 7 different classes. Figure \ref{fig:cora_gt} shows the dot-plot representation of the adjacency matrix of the ground truth.
+        \item The Cora dataset: A citation network of scientific publications \cite{cora}. The graph is undirected and contains 2708 nodes(=papers) and 5429 edges(=citations). The nodes are labeled with 7 different classes. Figure \ref{fig:cora_gt} shows the dot-plot representation of the adjacency matrix of the ground truth, with associated labels.
     \end{enumerate}
     While the Karate-club dataset is a small graph with a clear community structure, the Cora dataset is a much larger graph with a more complex structure. Both datasets are constructed from real-world data and observations which makes them interpretable. They also have a ground truth that we can use to evaluate the performance of the algorithms.
-    \paragraph{Running the experiments} For Zachary's karate club, the SBM variational EM algorithm as well as the Newman variant are run for $100$ iterations, using $20$ parallel initializations of $(\alpha, \pi, \tau)$ to increase probability of converging.
 
-    For Cora, the SBM variational EM algorithm as well as the Newman variant is run for $50$ iterations, using $10$ initializations of $(\alpha, \pi, \tau)$.
+    \paragraph{Running the experiments} For Zachary's karate club, Daudin-EM and Newman-EM are run for $100$ iterations. For Daudin-EM, using $20$ parallel initializations of $(\alpha, \pi, \tau)$ to increase probability of converging.
+
+    For Cora, they are run for $50$ iterations, using $10$ initializations of $(\alpha, \pi, \tau)$.
 
     In both cases, the spectral clustering algorithm is run once.
 
@@ -490,8 +491,24 @@
     \section{Analysis and discussion}
     \label{sec:discussion}
 
-    TODO
+    - 1st set: not robust to init on alpha, pi; but tau fine --> tried putting momentum and increasing max number of iterations, but did not improve much
 
+    - 2nd set:
+    - bad overall
+    - tendency to predict only one cluster (resulting in 0 NMI), especially for clear-cut clusters (homophilic and heterophilic)
+    - fitting: best for random graphs
+    - clustering:
+    - often bad modularity, even for tailor-made graphs, so bad at detecting clusters
+    - best NMI and RI for large random graphs and high-degree minority
+    - hyp: sensitive to degree distrib. Particularly true when looking at the performance for exp 5
+
+    - 3rd set:
+    - Daudin mostly dissatisfying, especially when compared with Newman which always give excellent results, while spectral good for Karate but bad for large Cora. Daudin also very slow due to the hard convergence of the fixed point algo.
+    - Karate: Daudin bad NMI, but somwhat good cluster coefficients
+    - Cora:
+    - supervised metrics: not so bad compared to newman
+    - unsupervised: not as good
+    - Although far from gt, 2 well identified clusters (2, 4) with better CC than GT. Also, class 5 is interesting as it gathers papers that
 
 
     \section{Conclusion}
@@ -622,12 +639,12 @@
     \setlength\heavyrulewidth{0.25ex}
     \begin{tabular}{@{}ccccccc@{}}
         \toprule
-        Experiment \# & Graphs passed           & Param. dist.                         & NMI             & RI               & G.t. M & Pred. M \\ \midrule
-        1             & \multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{$0.16 \pm 0.06$} & $0.07 \pm 0.07$ & $0.52 \pm  0.10$ & 0.08   & 0.02    \\
-        2             & \multicolumn{1}{c|}{8}  & \multicolumn{1}{c|}{$0.16 \pm 0.05$} & $0.33 \pm 0.13$ & $0.66 \pm 0.13$  & 0.07   & 0.07    \\
+        Experiment \# & \# graphs passed        & Param. dist.                         & NMI             & RI               & G.t. M & Pred. M \\ \midrule
+        1             & \multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{$0.13 \pm 0.06$} & $0.07 \pm 0.07$ & $0.52 \pm  0.10$ & 0.08   & 0.02    \\
+        2             & \multicolumn{1}{c|}{8}  & \multicolumn{1}{c|}{$0.08 \pm 0.03$} & $0.33 \pm 0.13$ & $0.66 \pm 0.13$  & 0.07   & 0.07    \\
         3             & \multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{$0.22 \pm 0.12$} & $0 \pm 0$       & $0.33 \pm 0.00$  & 0.63   & 0.00    \\
         4             & \multicolumn{1}{c|}{4}  & \multicolumn{1}{c|}{$0.22 \pm 0.02$} & $0.11 \pm 0.18$ & $0.27 \pm 0.12$  & 0.71   & 0.15    \\
-        5             & \multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{$0.87 \pm 0.01$} & $0.61 \pm 0.10$ & $0.93 \pm 0.02$  & 0.01   & -0.01   \\
+        5             & \multicolumn{1}{c|}{10} & \multicolumn{1}{c|}{$0.02 \pm 0.01$} & $1 \pm 0$       & $1 \pm 0$        & -0.38  & -0.38   \\
         6             & \multicolumn{1}{c|}{9}  & \multicolumn{1}{c|}{$0.18 \pm 0.08$} & $0 \pm 0$       & $0.33 \pm 0.00$  & -0.33  & 0.00    \\ \bottomrule
     \end{tabular}
     \caption{Results of the second set of experiments.}
@@ -715,7 +732,7 @@
     \begin{subfigure}{0.45\linewidth}
         \centering
         \includegraphics[width=\linewidth, trim={45 35 35 40}, clip]{figures/cora_SBM.png}
-        \caption{Clustering proposed by the SBM-VEM method.}
+        \caption{Clustering proposed by Daudin-EM.}
         \label{fig:cora_SBM}
     \end{subfigure}
     \hfill
@@ -726,7 +743,7 @@
     \begin{subfigure}{0.45\linewidth}
         \centering
         \includegraphics[width=\linewidth, trim={45 35 35 40}, clip]{figures/cora_Newman.png}
-        \caption{Clustering proposed by the Newman SBM method.}
+        \caption{Clustering proposed by Newman-EM method.}
         \label{fig:cora_newman}
     \end{subfigure}
     \hfill
@@ -737,7 +754,8 @@
         \label{fig:cora_spectral}
     \end{subfigure}
     \hfill
-    \caption{Clustering results for Cora.}
+    \caption{Dot-plot of the results for Cora.}
+    \scriptsize{G.T.: 1: Case Based; 2: Genetic Algorithms; 3: Neural Networks; 4: Probabilistic Methods; 5: Reinforcement Learning; 6: Rule Learning; 7: Theory.}
     \label{fig:cora_results}
 \end{figure}
 
@@ -747,7 +765,7 @@
     \begin{tabular}{@{}ccccccccccccc@{}}
         \toprule
         \multirow{2}{*}{\textbf{Method}}  & \multirow{2}{*}{\textbf{Time (s)}} & \multirow{2}{*}{\textbf{NMI}} & \multirow{2}{*}{\textbf{RI}} & \multirow{2}{*}{\textbf{M}} & \multirow{2}{*}{\textbf{CC}} & \multicolumn{7}{c}{\textbf{CC (per cluster)}}                                           \\
-                                          &                                    &                               &                              &                             &                              & 0                                             & 1    & 2    & 3    & 4    & 5    & 6    \\ \midrule
+                                          &                                    &                               &                              &                             &                              & 1                                             & 2    & 3    & 4    & 5    & 6    & 7    \\ \midrule
         \multicolumn{1}{c|}{Ground truth} & \multicolumn{1}{c|}{-}             & -                             & \multicolumn{1}{c|}{-}       & 0.64                        & 0.09                         & 0.19                                          & 0.06 & 0.12 & 0.23 & 0.10 & 0.22 & 0.16 \\
         \multicolumn{1}{c|}{Duadin-EM}    & \multicolumn{1}{c|}{3802}          & 0.15                          & \multicolumn{1}{c|}{0.70}    & 0.22                        & -                            & 0                                             & 0.16 & 0    & 0.29 & 0.25 & 0    & 0.86 \\
         \multicolumn{1}{c|}{Newman-EM}    & \multicolumn{1}{c|}{27}            & 0.18                          & \multicolumn{1}{c|}{0.76}    & 0.53                        & -                            & 0.25                                          & 0.06 & 0.16 & 0.28 & 0.12 & 0.29 & 0.18 \\
