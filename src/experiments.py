@@ -302,7 +302,7 @@ def report_metrics(X, tau, y, Q, full_clustering_coeff=True):
     )
 
 
-def draw_dot_plot(X, classification, classes=False, save_as=None):
+def draw_dot_plot(X, classification, save_as=None):
     meta = pd.DataFrame(
         data={
             "Class": classification,
@@ -310,7 +310,7 @@ def draw_dot_plot(X, classification, classes=False, save_as=None):
     )
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     adjplot(
-        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], ticks=classes
+        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], ticks=True
     )
     if save_as is not None:
         plt.savefig(f"images/{save_as}.png")
