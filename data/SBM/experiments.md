@@ -1,10 +1,11 @@
-| Experiment | $n$ | $Q$ |                                $\alpha$                               |                                     $\pi$                                    |
-|:----------:|:---:|:---:|:---------------------------------------------------------------------:|:----------------------------------------------------------------------------:|
-|      1     |  30 |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi = U U^T \times \frac{1}{2}$ (normalized)                |
-|      2     | 500 |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi = U U^T \times \frac{1}{2}$ (normalized)                |
-|      3     | 150 |  3  |                      $\alpha_i = (\frac{1}{Q})_i$                     |           $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$           |
-|      4     | 150 |  5  |                      $\alpha_i = (\frac{1}{Q})_i$                     |           $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$           |
-|      5     | 150 |  2  | $\alpha = \begin{pmatrix} \frac{9}{10} \\ \frac{1}{10} \end{pmatrix}$ | $\pi = \begin{pmatrix} \varepsilon_1 & a \\ \varepsilon_2 & b \end{pmatrix}$ |
-|      6     | 150 |  3  |                      $\alpha_i = (\frac{1}{Q})_i$                     |          $\pi_{ii} = \varepsilon_2, \ \pi_{ij} = 1 - \varepsilon_1$          |
+| Experiment |                      | Hyper-parameters | $Q$ |                               Parameters                              |                                     $\pi$                                    |
+|:----------:|----------------------|:----------------:|:---:|:---------------------------------------------------------------------:|:----------------------------------------------------------------------------:|
+|     \#     |         Name         |        $n$       | $Q$ |                                $\alpha$                               |                                     $\pi$                                    |
+|      1     |     Random-small     |        30        |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi = U U^T \times \frac{1}{2}$ (normalized)                |
+|      2     |     Random-large     |        500       |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi = U U^T \times \frac{1}{2}$ (normalized)                |
+|      3     |      Homophilic      |        150       |  3  |                      $\alpha_i = (\frac{1}{Q})_i$                     |           $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$           |
+|      4     |    Homophilic-hard   |        150       |  5  |                      $\alpha_i = (\frac{1}{Q})_i$                     |       $\pi_{ii} \sim \mathcal{U}([0.5, 1)), \ \pi_{ij} = \varepsilon_2$      |
+|      5     | High-degree-minority |        150       |  2  | $\alpha = \begin{pmatrix} \frac{9}{10} \\ \frac{1}{10} \end{pmatrix}$ | $\pi = \begin{pmatrix} \varepsilon_1 & a \\ \varepsilon_2 & b \end{pmatrix}$ |
+|      6     |     Heterophilic     |        150       |  3  |                      $\alpha_i = (\frac{1}{Q})_i$                     |          $\pi_{ii} = \varepsilon_2, \ \pi_{ij} = 1 - \varepsilon_1$          |
 
-In this table, $\varepsilon_1 = 0.1$, $\varepsilon_2=0.01$, $a = 0.7$ and $b=0.8$. $\text{Dir}(\delta)$ is the Dirichlet law of parameter $\delta$. $G$ is a $Q \times Q$ random matrix with i.i.d. normally distributed coefficients.
+In this table, $\varepsilon_1 = 0.1$, $\varepsilon_2=0.01$, $a = 0.7$ and $b=0.8$. $\text{Dir}(\delta)$ is the Dirichlet law of parameter $\delta$. $U$ is a $Q \times Q$ random matrix with i.i.d. uniformly distributed coefficients.

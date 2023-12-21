@@ -7,7 +7,6 @@ from src.constants import EPSILON
 from src.graphs import random_graph
 from src.implementations import IMPLEMENTATIONS
 from src.utils import sort_parameters
-from src.data import graph_and_params_from_archive
 
 
 IMAGE_PATH = "images/"
