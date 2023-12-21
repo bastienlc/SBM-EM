@@ -75,7 +75,7 @@ def graph_from_edge_list(filename):
 
 
 def generate_SBM_dataset(experiment=1, n_graphs=100):
-    """Refer to the readme file in the data folder for details on the experiments."""
+    """Refer to the experiments.md file in the src/data folder for details on the experiments."""
     eps1 = 0.1
     eps2 = 0.01
     a = 0.7
