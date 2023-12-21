@@ -167,9 +167,11 @@ def write_report(experiment, implementation="pytorch"):
 
         report.write("Metrics with best graphs:\n")
         best_graph_param_distance = np.argmin(param_distances)
-        best_graph_distance_param = passed_graphs[best_graph_param_distance]
-        report.write(f"Best graph for params distance: {best_graph_distance_param}\n")
-        report.write(f"Params distance: {param_distances[best_graph_distance_param]}\n")
+        best_graph_param_distance_idx = passed_graphs[best_graph_param_distance]
+        report.write(
+            f"Best graph for params distance: {best_graph_param_distance_idx}\n"
+        )
+        report.write(f"Params distance: {param_distances[best_graph_param_distance]}\n")
         best_graph_elbo = np.argmax(elbo_diffs)
         best_graph_elbo_idx = passed_graphs[best_graph_elbo]
         report.write(f"Best graph for elbo: {best_graph_elbo_idx}\n")
@@ -279,7 +281,7 @@ def show_karate_gt_vs_prediction(G, tau, y):
     plt.show()
 
 
-def report_metrics(X, tau, y, Q, detailed=True):
+def report_metrics(X, tau, y, Q, full_clustering_coeff=True):
     tau = rearrange_tau(tau, y, Q)
     pred_labels = np.argmax(tau, axis=1)
     print("NMI: {:.3f}".format(normalized_mutual_information(y, pred_labels)))
@@ -288,16 +290,16 @@ def report_metrics(X, tau, y, Q, detailed=True):
     pred_clustering = np.array([pred_labels == q for q in range(Q)])
     print("Gt Modularity: {:.3f}".format(modularity(X, gt_clustering)))
     print("Pred Modularity: {:.3f}".format(modularity(X, pred_clustering)))
-    if detailed:
+    if full_clustering_coeff:
         print("Graph clustering coefficient:", clustering_coefficient(X, None))
-        print(
-            "Per class gt clustering coefficients:",
-            [clustering_coefficient(X, gt_clustering[q]) for q in range(Q)],
-        )
-        print(
-            "Per class pred clustering coefficients:",
-            [clustering_coefficient(X, pred_clustering[q]) for q in range(Q)],
-        )
+    print(
+        "Per class gt clustering coefficients:",
+        [clustering_coefficient(X, gt_clustering[q]) for q in range(Q)],
+    )
+    print(
+        "Per class pred clustering coefficients:",
+        [clustering_coefficient(X, pred_clustering[q]) for q in range(Q)],
+    )
 
 
 def draw_dot_plot(X, classification, save_as=None):

@@ -101,7 +101,9 @@ def generate_SBM_dataset(experiment=1, n_graphs=100):
         n = 150
         Q = 5
         alpha = np.ones(Q) / Q
-        pi = eps2 * np.ones((Q, Q)) + (1 - eps1 - eps2) * np.eye(Q)
+        cluster_densities = np.zeros((Q, Q))
+        np.fill_diagonal(cluster_densities, 0.5 + 0.5 * np.random.random(Q))
+        pi = eps2 * np.ones((Q, Q)) - eps2 * np.eye(Q) + cluster_densities
     elif experiment == 5:
         n = 150
         Q = 2

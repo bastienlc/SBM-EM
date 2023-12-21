@@ -9,7 +9,7 @@ Pred modularity: 0.006271178236511389 +/- 0.026341387332360782
 
 Metrics with best graphs:
 Best graph for params distance: 7
-Params distance: 0.15268299194179646
+Params distance: 0.10769713224332585
 Best graph for elbo: 1
 ELBO difference: 0.06040975764292459
 Best graph for NMI: 7
