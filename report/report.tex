@@ -160,9 +160,9 @@
     social [1] or biological [4]. This problem is of importance to perform a mesoscopic study of graphs, where clusters can be interpreted as meta-nodes that reveal new interactions  within a complex system.
 
 
-    Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. As well documented in \cite{fortunato_community_2010}, several classes of algorithms can be identified in the literature. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divise groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always easy.
+    Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. Several classes of algorithms are documented in the literature \cite{fortunato_community_2010}. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divide groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always trivial.
 
-    Alternatively to algorithmic methods, model-based methods fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph. In this report, their method will be referred to as ``Daudin-EM''.
+    Model-based methods are an alternative to algorithmic methods, that aim to fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph. In this report, their method will be referred to as ``Daudin-EM''.
 
     In this report, we detail the Daudin-EM method as well as a variant from the literature in Section \ref{sec:method}. In Section \ref{sec:experiments}, we present our implementation of the method and the experiments performed to evaluate it, with a discussion of the results in Section \ref{sec:discussion}. Lastly, we conclude in Section \ref{sec:conclusion}.
 
@@ -176,7 +176,7 @@
 
     We will follow the same notations as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such, $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
 
-    As explained by the authors, the SBM draws inspiration both from mixture models for distriubtion of degrees, which have the disadvantage of not dealing with the probability of two given nodes of being connected, and from the foundational Erdös-Rényi model, which is known to fit real graphs poorly. To define the SBM, we consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the membership of node $i$ to class $q$. We have the following prior distribution on $Z$:
+    As explained by the authors, the SBM draws inspiration both from mixture models for distribution of degrees, that have the disadvantage of not dealing with the probability for two given nodes to be connected, and from the foundational Erdös-Rényi model, which is known to fit real graphs poorly. To define the SBM, we consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the membership of node $i$ to class $q$. We have the following prior distribution on $Z$:
     \begin{equation}
         \forall i\in \left\{1,\dots,n\right\}, \quad \sum_{q=1}^Q Z_{iq} = 1
     \end{equation}
@@ -186,7 +186,7 @@
         \forall q\in \left\{1,\dots,Q\right\},\quad \mathbb{P}(Z_{iq}=1)=\alpha_q.
     \end{equation}
 
-    We introduce priors on the existence of edges between nodes of different classes. We denote $\pi_{ql}$ the probability of an edge between a node of class $q$ and a node of class $l$. Because the graph is undirected, we have $\pi_{ql}=\pi_{lq}$. Finally we suppose the following conditional distribution on the existence of edges between nodes : $ \forall q,l\in \left\{1,\dots,Q\right\}, \quad \forall i\neq j\in \left\{1,\dots,n\right\},$
+    We introduce priors on the existence of edges between nodes of different classes. We denote $\pi_{ql}$ the probability of an edge between a node of class $q$ and a node of class $l$. Because the graph is undirected, we have $\pi_{ql}=\pi_{lq}$. This prior writes : $ \forall q,l\in \left\{1,\dots,Q\right\}, \quad \forall i\neq j\in \left\{1,\dots,n\right\},$
     \begin{equation}
         \label{eq:conditional_distribution}
         \mathbb{P}(X_{ij}=1\,|\,Z_{iq}=1,Z_{jl}=1)=\pi_{ql}.
@@ -224,7 +224,7 @@
         \end{aligned}
     \end{equation}
 
-    Because the likelihood $\mathcal{L}(X)$ is not tractable, the authors propose to use an EM algorithm to fit the model. However the E-step is not tractable either because of the posterior distribution of $Z$ given $X$. Instead the authors propose to optimize $\eqref{eq:lower_bound}$ which is a lower bound of $\log\mathcal{L}(X)$ obtained using the Kullback-Leibler divergence between the posterior distribution of $Z$ given $X$ and an approximated distribution $R_X$.
+    Because the likelihood $\mathcal{L}(X)$ is not tractable, the authors propose to use an Expectation-Maximization (EM) algorithm to fit the model. However the E-step of the EM algorithm is not tractable either because of the posterior distribution of $Z$ given $X$. Instead the authors propose to optimize $\eqref{eq:lower_bound}$ which is a lower bound of $\log\mathcal{L}(X)$ obtained using the Kullback-Leibler divergence between the posterior distribution of $Z$ given $X$ and an approximated distribution $R_X$.
 
     \begin{equation}
         \label{eq:lower_bound}
@@ -239,7 +239,7 @@
             \forall i \in \left\{1,\dots,n\right\}, \quad & h(Z_i, \tau_i)=\prod_{q=1}^Q \tau_{iq}^{Z_{iq}}.
         \end{aligned}
     \end{equation}
-    Then, $\forall i \in \left\{1,\dots,n\right\}, \forall q \in \left\{1,\dots,Q\right\},$
+    The fixed point is, $\forall i \in \left\{1,\dots,n\right\}, \forall q \in \left\{1,\dots,Q\right\},$
     \begin{equation}
         \label{eq:fixed_point}
         \hat{\tau}_{iq}\propto \alpha_q \prod_{j\neq i}\prod_l \left[\pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}\right]^{\hat{\tau}_{jl}}
@@ -258,7 +258,14 @@
 
     \subsubsection{Selection of $Q$}
 
-    [ICL]
+    In practice the number of clusters $Q$ has to be estimated. The authors propose to use a criterion based on the Integrated Classification Likelihood (ICL) which writes :
+    \begin{equation}
+        \begin{aligned}
+            \mathrm{ICL}(X, Q) & =\max_\theta\log \mathcal{L}(X, Z \ |\ \theta, Q)-\frac{Q-1}{2}\log n \\&-\frac{1}{2}\times\frac{Q(Q+1)}{2}\log\frac{n(n-1)}{2}
+        \end{aligned}
+    \end{equation}
+
+    This criterion requires the knowledge of the parameters $\theta$ of the model. We will need to estimate them using the EM algorithm.
 
     \subsection{An alternative mixture-model by Newman et. al. \cite{newman}}
     \label{subsec:newman}
@@ -321,10 +328,9 @@
 
     \subsection{Implementation}
 
-    All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) and its variant by Newman \textcolor{red}{Sofiane: n'hésite pas à adapter} are both implemented in 2 versions: using Numpy and using PyTorch. Two additional PyTorch versions were added for Daudin-EM, one to handle memory issues occurring for large graphs and the other that takes the log of products encountered in the computations to turn them into sums and speed up the process \textcolor{red}{Bastien: hésite pas à adapter au besoin}. As an indication, a speed comparison \textcolor{red}{Est-elle à jour ?} between the versions of the mixture model is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report. %due to a lack of time and to avoid exploring too many directions
+    All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) was implemented in Python using Numpy, and later in Pytorch to distribute the computations on a GPU. A second Pytorch implementation was added to handle memory issues occurring for large graphs. The Newman variant was directly implemented in Pytorch. As an indication, a speed comparison \textcolor{red}{Est-elle à jour ?} between the versions of the mixture model is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report. %due to a lack of time and to avoid exploring too many directions
 
-    The implementation also comes with a battery of tests to validate the implementations, as well as scripts and notebooks to reproduce and visualize the experiments. All experiences used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case
-    .
+    The implementation also comes with a battery of tests to validate the implementations, as well as scripts and notebooks to reproduce and visualize the experiments. All experiences used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case.
 
     \subsection{Robustness of the fixed-point algorithm}
     \label{subsec:robustness}
