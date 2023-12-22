@@ -1,7 +1,7 @@
-| Experiment |                      | Hyper-parameters | $Q$ |                               Parameters                              |                                     $\pi$                                    |
+| Experiment |                      | Hyper-parameters |     |                               Parameters                              |                                                                              |
 |:----------:|----------------------|:----------------:|:---:|:---------------------------------------------------------------------:|:----------------------------------------------------------------------------:|
 |     \#     |         Name         |        $n$       | $Q$ |                                $\alpha$                               |                                     $\pi$                                    |
-|      1     |     Random-small     |        30        |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi_{ij} \sim \mathcal{U}([0, 1))$(normalized)                |
+|      1     |     Random-small     |        30        |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi_{ij} \sim \mathcal{U}([0, 1))$ (normalized)                |
 |      2     |     Random-large     |        500       |  3  |                     $\alpha \sim \text{Dir}(1.5)$                     |                 $\pi_{ij} \sim \mathcal{U}([0, 1))$ (normalized)                |
 |      3     |      Homophilic      |        150       |  3  |                      $\alpha_i = (\frac{1}{Q})_i$                     |           $\pi_{ii} = 1-\varepsilon_1, \ \pi_{ij} = \varepsilon_2$           |
 |      4     |    Homophilic-hard   |        150       |  5  |                      $\alpha_i = (\frac{1}{Q})_i$                     |       $\pi_{ii} \sim \mathcal{U}([0.5, 1)), \ \pi_{ij} = \varepsilon_2$      |
