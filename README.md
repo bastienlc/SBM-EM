@@ -39,7 +39,7 @@ The following notebooks were left in the repository for the sake of completeness
 | `experiments_spectral.ipynb` | Experiments on the Cora and Karate Club datasets using a spectral method. |
 | `fixed_point_convergence.ipynb` | An investigation into the convergence of the fixed point algorithm proposed by Daudin et. al. |
 | `implementations_speed.ipynb` | A comparison of the speeds of different implementations of the algorithm. |
-| `Newman_Loops_first_tests.ipynb` | First Experiments with the Newman variant of the algorithm. |
+| `newman_loops_first_tests.ipynb` | First Experiments with the Newman variant of the algorithm. |
 
 ## Contributors
 
