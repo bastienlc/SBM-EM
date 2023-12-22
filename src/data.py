@@ -108,7 +108,7 @@ def generate_SBM_dataset(experiment=1, n_graphs=100):
         n = 150
         Q = 2
         alpha = np.array([9 / 10, 1 / 10])
-        pi = np.array([[eps1, a], [eps2, b]])
+        pi = np.array([[eps2, a], [a, b]])
     elif experiment == 6:
         n = 150
         Q = 3

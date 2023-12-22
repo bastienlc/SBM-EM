@@ -50,6 +50,23 @@ def rearrange_tau(q, true_classes_clusters, Q):
     return new_q
 
 
+def param_distance(alpha_pred, pi_pred, alpha, pi, Q):
+    best_distance = np.infty
+    for permutation in itertools.permutations(range(Q)):
+        alpha_perm = np.zeros(Q)
+        for i in range(Q):
+            alpha_perm[i] = alpha_pred[permutation[i]]
+        pi_perm = np.zeros((Q, Q))
+        for i in range(Q):
+            for j in range(Q):
+                pi_perm[i, j] = pi_pred[permutation[i], permutation[j]]
+        dist_alpha = np.linalg.norm(alpha_perm - alpha) / Q
+        dist_pi = np.linalg.norm(pi_perm - pi) / (Q**2)
+        if dist_alpha + dist_pi < best_distance:
+            best_distance = dist_alpha + dist_pi
+    return best_distance
+
+
 # Experiments on SBM dataset
 
 
@@ -126,9 +143,7 @@ def write_report(experiment, implementation="pytorch"):
                     )
                 )
             )
-            dist_alpha = np.linalg.norm(alpha - alpha_pred) / Q
-            dist_pi = np.linalg.norm(pi - pi_pred) / (Q**2)
-            param_distances.append(dist_alpha + dist_pi)
+            param_distances.append(param_distance(alpha_pred, pi_pred, alpha, pi, Q))
 
             # Clustering quality metrics
             true_labels = np.argmax(Z, axis=1)

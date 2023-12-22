@@ -1,24 +1,24 @@
 Experiment 5
 Number of graphs passed: 10
-Params distance: 0.8775415360004823 +/- 0.011471776532637703
-ELBO difference: -2.2128684980209083 +/- 0.560876046519125
-NMI: 0.6081593746467346 +/- 0.09923275256292455
-Rand index: 0.9317136465324385 +/- 0.02430196554150235
-True modularity: -0.0236293456809495 +/- 0.017388527570947554
-Pred modularity: -0.04425960127163615 +/- 0.01431859765358222
+Params distance: 0.01608117051290832 +/- 0.011421672819649285
+ELBO difference: -8.467324751222979 +/- 1.5552740722233898
+NMI: 1.0 +/- 1.9229626863835638e-16
+Rand index: 1.0 +/- 0.0
+True modularity: -0.3867201807785111 +/- 0.006441941362262044
+Pred modularity: -0.3867201807785111 +/- 0.006441941362262044
 
 Metrics with best graphs:
-Best graph for params distance: 9
-Params distance: 0.8583667731790683
-Best graph for elbo: 9
-ELBO difference: -1.259313415588789
+Best graph for params distance: 8
+Params distance: 0.003351077521847126
+Best graph for elbo: 2
+ELBO difference: -6.751441245312824
 Best graph for NMI: 5
-NMI: 0.7575664191687449
-Best graph for Rand index: 5
-Rand index: 0.9605369127516779
-Best graph for gt modularity: 1
-True modularity: 0.011658283566071547
-Pred modularity: -0.013977708896240013
-Best graph for gt modularity: 1
-True modularity: 0.011658283566071547
-Pred modularity: -0.013977708896240013
+NMI: 1.0000000000000002
+Best graph for Rand index: 0
+Rand index: 1.0
+Best graph for gt modularity: 6
+True modularity: -0.37615746117126664
+Pred modularity: -0.37615746117126664
+Best graph for gt modularity: 6
+True modularity: -0.37615746117126664
+Pred modularity: -0.37615746117126664
