@@ -157,7 +157,7 @@
     % and internal (resp. inter-cluster) edges are edges between nodes of $C$ (resp. between nodes of $C$ and nodes outside of $C$).
     Some applications may also be interested in \emph{heterophilic} clusters, defined such that $\delta_{int}(C) < \delta_{ext}(C)$.
     Graph clustering has tremendous applications in the study of real networks such as
-    social [1] or biological [4]. This problem is of importance to perform mesoscopic studies of graphs, where clusters can be seen as meta-nodes to reveal interactions within a complex system.
+    social \cite{chunaev_community_2020}. or biological \cite{sah_exploring_2014}. This problem is of importance to perform mesoscopic studies of graphs, where clusters can be seen as meta-nodes to reveal interactions within a complex system.
 
 
     Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. Several classes of algorithms are documented in the literature \cite{fortunato_community_2010}. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divide groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always trivial.
