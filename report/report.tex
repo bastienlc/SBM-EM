@@ -476,9 +476,7 @@
     While the Karate-club dataset is a small graph with a clear community structure, the Cora dataset is a much larger graph with a more complex structure. Both datasets are constructed from real-world data and observations which makes them interpretable. They also have a ground truth that we can use to evaluate the performance of the algorithms.
 
     \paragraph{Running the experiments} For Zachary's karate club, Daudin-EM and Newman-EM are run for $100$ iterations. For Daudin-EM, using $20$ parallel initializations of $(\alpha, \pi, \tau)$ to increase probability of converging.
-
     For Cora, they are run for $50$ iterations, using $10$ initializations of $(\alpha, \pi, \tau)$.
-
     In both cases, the spectral clustering algorithm is run once.
 
     Figures \ref{fig:zachary_results} and \ref{fig:cora_results} show for both datasets the true clusterings and those proposed by the 3 methods, and tables \ref{tab:zachary_results} and \ref{tab:cora_results} show the resulting metrics.
@@ -488,33 +486,31 @@
 
 
 
-    \section{Analysis and discussion}
+    \section{Results discussion}
     \label{sec:discussion}
 
-    - 1st set: not robust to init on alpha, pi; but tau fine --> tried putting momentum and increasing max number of iterations, but did not improve much
+    \paragraph{First set of experiments}
+    From the first set of experiments, we understand that the main weakness of Daudin-EM is the difficult convergence of the fixed-point algorithm of the E-step. In particular, as observed on Figure \ref{fig:fixed_point_cv}, this algorithm is particularly sensitive to the initialization on $(\alpha, \pi)$, but not as much on the initialization of $\tau$. Some ideas have been tested to solve this, such as applying a momentum-based formula of the form $\hat{\tau}_{n+1} = \hat{\tau}_{n} + \gamma \hat{\tau}_{n}^{\mathrm{FP}}$ for the $n$\textsuperscript{th} E-step, with $\gamma$ an update rate and $\hat{\tau}_{n}^{\mathrm{FP}}$ the result of the fixed-point algorithm; but this showed little improvement.
 
-    - 2nd set:
-    - bad overall
-    - tendency to predict only one cluster (resulting in 0 NMI), especially for clear-cut clusters (homophilic and heterophilic)
-    - fitting: best for random graphs
-    - clustering:
-    - often bad modularity, even for tailor-made graphs, so bad at detecting clusters
-    - best NMI and RI for large random graphs and high-degree minority
-    - hyp: sensitive to degree distrib. Particularly true when looking at the performance for exp 5
+    \paragraph{Second set of experiments}
+    In the SBM experiments, we observe that Daudin-EM performs generally rather poorly, both for fitting the SBM and clustering graphs. In particular, it has a tendency to predict only one cluster (resulting in null NMI), especially for clear-cut clusters (both homophilic and heterophilic). On the other hand, it brings better model-fitting performance for random graphs, especially large ones, and also yields high supervised metrics in this case. Lastly, it achieves near-perfect results for the ``High-degree-minority'' case of experiment 5 according to both criteria, with a modularity that is rightly negative in this instance of graph type.
 
-    - 3rd set:
-    - Daudin mostly dissatisfying, especially when compared with Newman which always give excellent results, while spectral good for Karate but bad for large Cora. Daudin also very slow due to the hard convergence of the fixed point algo.
-    - Karate: Daudin bad NMI, but somwhat good cluster coefficients
-    - Cora:
-    - supervised metrics: not so bad compared to newman
-    - unsupervised: not as good
-    - Although far from gt, 2 well identified clusters (2, 4) with better CC than GT. Also, class 5 is interesting as it gathers papers that
+    To sum up, Daudin-EM seems bad at detecting clusters, especially rather homogeneous ones. Our main observation is that this method seems very sensitive to the distribution of degrees of nodes, as rather homogeneous clusters are hardly distinguished by this quantity. This would also explain the best results observed for experiment 5. One way to alleviate this problem might be to offer semi-supervised guidance to enforce a favourable initialization.
+
+    \paragraph{Third set of experiments} For both datasets, Daudin-EM brings mostly dissatisfying performance, especially when compared with Newman which always give the best results. As for the spectral clustering method, it is behaves well on Zachary's karate club, but very badly on Cora, probably due to its large size. Daudin-EM is also particularly slow, notably due to the number of iterations required for convergence of the E-step.
+
+    For Zachary's karate club, Daudin-EM yields low NMI and RI, as well as a negative modularity. On the other hand, the resulting per-cluster clustering coefficients are higher than that of the ground truth clusters in average, thus revealing clusters of better quality from that perspective.
+
+    On the other hand, Daudin-EM brought interesting results for Cora. Indeed, the supervised metrics are comparable to those for Newman-EM. Furthermore, although the final modularity is quite low with Daudin-EM, and despite some clusters having a clustering coefficient of 0, the method reveals some good-quality clusters, especially clusters 2 and 4. Additionally, cluster 5 is interesting as it gathers papers that cite (or are cited by) many papers from many different themes, as is probably the case for papers that fall within the ``neural networks'' category. Thereby, the method succeeds to bring a new perspective to the dataset that does not restrict to homophily-driven clustering.
 
 
     \section{Conclusion}
     \label{sec:conclusion}
 
-    TODO
+    The SBM-based variational EM method introduced by Daudin \textit{et. al.} in \cite{main_article} has been presented, along with another EM-method from Newman \& Leicht \cite{newman} and the spectral-clustering baseline. Daudin-EM relies on an approximate maximization of the log-likelihood of the law induced by the SBM model, to circumvent the intractability of this law and of its conditional law given the membership of nodes to classes. We have illustrated that the main flaw of this algorithm is the unproven and unreliable convergence of the fixed-point-based E-step, a flaw not shared by Newman-EM which benefits from a closed-form solution. This is at the root of a lack of robustness of the method as well as to its lengthy execution due to numerous iterations. Testing on several datasets revealed poor performance of the method against Newman-EM, but better performance against spectral clustering on Cora. In particular, the experiments hinted towards a large sensitivity of the method node degree distributions and a tendency to gather nodeds into clusters as large as possible. [better perf on large graphs and reveals properties different from other clustering methods]
+
+
+    \newpage
 
     \bibliography{bibliography}
 
