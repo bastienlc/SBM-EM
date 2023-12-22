@@ -157,10 +157,10 @@
     % and internal (resp. inter-cluster) edges are edges between nodes of $C$ (resp. between nodes of $C$ and nodes outside of $C$).
     Some applications may also be interested in \emph{heterophilic} clusters, defined such that $\delta_{int}(C) < \delta_{ext}(C)$.
     Graph clustering has tremendous applications in the study of real networks such as
-    social \cite{chunaev_community_2020}. or biological \cite{sah_exploring_2014}. This problem is of importance to perform mesoscopic studies of graphs, where clusters can be seen as meta-nodes to reveal interactions within a complex system.
+    social \cite{chunaev_community_2020} or biological \cite{sah_exploring_2014} ones. This problem is of importance to perform mesoscopic studies of graphs, where clusters can be seen as meta-nodes to reveal interactions within a complex system.
 
 
-    Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. Several classes of algorithms are documented in the literature \cite{fortunato_community_2010}. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divide groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always trivial.
+    Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly problematic as real networks easily grow to thousands or even millions of nodes. Several classes of algorithms are documented in the literature \cite{fortunato_community_2010}. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divide groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always trivial.
 
     Model-based methods are an alternative to algorithmic methods, that aim to fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph. We will refer to this method as ``Daudin-EM''.
 
@@ -192,7 +192,7 @@
         \mathbb{P}(X_{ij}=1\,|\,Z_{iq}=1,Z_{jl}=1)=\pi_{ql}.
     \end{equation}
 
-    Figure \ref{fig:graphical_model} shows the graphical model of this mixture model.
+    Figure \ref{fig:graphical_model} shows the graphical model associated with this mixture model.
 
     \begin{figure}[H]
         \centering
@@ -209,7 +209,7 @@
             \edge {alpha} {Z_j}
             \edge {pi} {X_{ij}}
         }
-        \caption{Graphical model of the mixture model}
+        \caption{Graphical model of the SBM}
         \label{fig:graphical_model}
     \end{figure}
 
@@ -249,12 +249,14 @@
     \begin{equation}
         \label{eq:m_step}
         \forall q, l \in \left\{1,\dots,Q\right\}, \quad
-        \hat{\alpha}_q=\frac{1}{n}\sum_{i} \hat{\tau}_{iq}
+        \hat{\alpha}_q=\frac{1}{n}\sum_{i} \tau_{iq}
     \end{equation}
     and
     \begin{equation}
-        \hat{\pi}_{ql}=\frac{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}X_{ij}}{\sum_{i\neq j} \hat{\tau}_{iq}\hat{\tau}_{jl}}.
+        \hat{\pi}_{ql}=\frac{\sum_{i\neq j} \tau_{iq}\tau_{jl}X_{ij}}{\sum_{i\neq j} \tau_{iq}\tau_{jl}}.
     \end{equation}
+
+    These relations let us define an EM algorithm that is guaranteed to increase the lower bound $\mathcal{J}(R_X)$ at each iteration (conditionnal on solving the fixed point relation $\eqref{eq:fixed_point}$).
 
     \subsubsection{Selection of $Q$}
     \label{subsubsec:icl}
@@ -274,7 +276,7 @@
     A different mixture model has been proposed the same year as Daudin-EM, by Newman \textit{et al.} \cite{newman}. The main difference lies in the way a cluster is defined. In the previous model, the probability of connection between a node in cluster $A$ and a node in cluster $B$ is the same, regardless of the considered nodes.
     \newline
     \newline
-    In the Newman model, we build directed edges between nodes. In the undirected case, we simply consider that two nodes are connected if there are directed edges between them in both directions. By construction, $2$ nodes belong to the same cluster if the probability of a directed edge between either of them and any other node in the graph is the same. Therefore, for any given pair of nodes $(i, j)$ belonging to the same cluster $C$ and any other node $k$, we have,
+    In the Newman model, we build directed edges between nodes. In the undirected case, we simply consider that two nodes are connected if there are directed edges between them in both directions. By construction, two nodes belong to the same cluster if the probability of a directed edge between either of them and any other node in the graph is the same. Therefore, for any given pair of nodes $(i, j)$ belonging to the same cluster $C$ and any other node $k$, we have,
     \begin{equation}
         \mathbb{P}(i \rightarrow k) = \mathbb{P}(j \rightarrow k) = \Pi_{C, k}.
     \end{equation}
@@ -309,9 +311,13 @@
     %add colored text
     \jump
     The main advantage of this model is that the expectation step is much simpler than in the previous model as it doesn't require to solve a fixed-point problem. Indeed, we have an explicit expression for $\tau_{iq}$,
-    $$ \tau_{iq} = \frac{\alpha_q\prod_{j=1}^N \Pi_{qj}^{X_{ij}}}{\sum_{s=1}^Q \alpha_s\prod_{j=1}^N \Pi_{sj}^{X_{ij}}}.$$
+    \begin{equation}
+        \hat{\tau}_{iq} = \frac{\alpha_q\prod_{j=1}^N \Pi_{qj}^{X_{ij}}}{\sum_{s=1}^Q \alpha_s\prod_{j=1}^N \Pi_{sj}^{X_{ij}}}
+    \end{equation}
     The M-step updates are,
-    $$ \alpha_q = \frac{1}{n} \sum_{i=1}^n \tau_{iq} \quad\text{ and }\quad \Pi_{qj} = \frac{\sum_{i=1}^n X_{ij}\tau_{iq} }{\sum_{i=1}^n k_i \tau_{iq}}.$$
+    \begin{equation}
+        \hat{\alpha}_q = \frac{1}{n} \sum_{i=1}^n \tau_{iq} \quad\text{ and }\quad \hat{\Pi}_{qj} = \frac{\sum_{i=1}^n X_{ij}\tau_{iq} }{\sum_{i=1}^n k_i \tau_{iq}}
+    \end{equation}
     where $k_i = \sum_{j=1}^n X_{ij}$ is the degree of node $i$. We verify that the normalization conditions are satisfied.
 
     \subsection{Spectral clustering}
@@ -331,7 +337,7 @@
 
     All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) was implemented in Python using Numpy, and later in Pytorch to distribute the computations on a GPU. A second Pytorch implementation was added to handle memory issues occurring for large graphs. The Newman variant was directly implemented in Pytorch. As an indication, a speed comparison between the versions of the method is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report.
 
-    The code comes with a battery of tests to validate the implementations. Scripts and notebooks to reproduce and visualize the experiments are also available; please refer to the \texttt{README.md} file in the attached code to know on what notebook each experiment is run. All experiments used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case. For visualizations, we used the Networkx library.
+    The code comes with a battery of tests to validate the implementations. Scripts and notebooks to reproduce and visualize the experiments are also available; please refer to the \texttt{README.md} file in the attached code to know in which notebook each experiment is run. All experiments used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case. For visualizations, we used the Networkx library.
 
     \begin{figure*}
         \centering
