@@ -1,6 +1,5 @@
-from sklearn import metrics
 import numpy as np
-
+from sklearn import metrics
 
 # Supervised metrics
 
@@ -157,7 +156,7 @@ def modularity_v2(X, clustering):
     Implemented as presented by B.H.Good, Y.A. de Montjoye and A. Clauset in https://arxiv.org/abs/0910.0165.pdf.
     """
     m = (X.trace() + np.sum(X)) / 2
-    c = clustering.shape[0]
+    c = len(clustering)
     e = np.zeros(c)
     d = np.zeros(c)
     for i in range(c):
