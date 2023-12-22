@@ -1,9 +1,10 @@
 import os
+from typing import List, Tuple, Optional
 import numpy as np
-from matplotlib import pyplot as plt
 import torch
 import itertools
 import networkx as nx
+from matplotlib import pyplot as plt
 from graspologic.plot import adjplot
 import pandas as pd
 import pickle
@@ -18,11 +19,29 @@ from .metrics import (
 )
 from .implementations import get_implementation
 
-
 RESULTS_PATH = "results/"
 
 
-def rearrange_tau(q, true_classes_clusters, Q):
+def rearrange_tau(
+    q: np.ndarray, true_classes_clusters: np.ndarray, Q: int
+) -> np.ndarray:
+    """
+    Rearrange classes in the tau matrix to minimize the number of misclassified nodes.
+
+    Parameters
+    ----------
+    q : np.ndarray
+        The tau matrix to be rearranged.
+    true_classes_clusters : np.ndarray
+        True classes of nodes.
+    Q : int
+        The number of clusters.
+
+    Returns
+    -------
+    np.ndarray
+        Rearranged tau matrix.
+    """
     # Rearrange q such that the number of misclassified nodes is minimized
     if isinstance(q, torch.Tensor):
         pred_clusters = np.argmax(q.detach().numpy(), axis=1)
@@ -50,7 +69,34 @@ def rearrange_tau(q, true_classes_clusters, Q):
     return new_q
 
 
-def param_distance(alpha_pred, pi_pred, alpha, pi, Q):
+def param_distance(
+    alpha_pred: np.ndarray,
+    pi_pred: np.ndarray,
+    alpha: np.ndarray,
+    pi: np.ndarray,
+    Q: int,
+) -> float:
+    """
+    Compute the parameter distance between predicted and true parameters.
+
+    Parameters
+    ----------
+    alpha_pred : np.ndarray
+        Predicted alpha vector.
+    pi_pred : np.ndarray
+        Predicted pi matrix.
+    alpha : np.ndarray
+        True alpha vector.
+    pi : np.ndarray
+        True pi matrix.
+    Q : int
+        The number of clusters.
+
+    Returns
+    -------
+    float
+        Parameter distance.
+    """
     best_distance = np.infty
     for permutation in itertools.permutations(range(Q)):
         alpha_perm = np.zeros(Q)
@@ -71,8 +117,42 @@ def param_distance(alpha_pred, pi_pred, alpha, pi, Q):
 
 
 def compare_elbos(
-    X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred, implementation="pytorch"
-):
+    X: np.ndarray,
+    alpha: np.ndarray,
+    pi: np.ndarray,
+    Z: np.ndarray,
+    alpha_pred: np.ndarray,
+    pi_pred: np.ndarray,
+    tau_pred: np.ndarray,
+    implementation: Optional[str] = "pytorch",
+) -> float:
+    """
+    Compare the ELBOs (Evidence Lower Bound) between true and predicted parameters.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The adjacency matrix of the graph.
+    alpha : np.ndarray
+        True alpha vector.
+    pi : np.ndarray
+        True pi matrix.
+    Z : np.ndarray
+        True latent variables Z.
+    alpha_pred : np.ndarray
+        Predicted alpha vector.
+    pi_pred : np.ndarray
+        Predicted pi matrix.
+    tau_pred : np.ndarray
+        Predicted latent variables tau.
+    implementation : str, optional
+        The implementation to use, by default "pytorch".
+
+    Returns
+    -------
+    float
+        ELBO difference.
+    """
     implementation = get_implementation(implementation)
     X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred = map(
         implementation.input, [X, alpha, pi, Z, alpha_pred, pi_pred, tau_pred]
@@ -84,7 +164,25 @@ def compare_elbos(
     return (true_elbo - pred_elbo) / true_elbo
 
 
-def write_SBM_pred_results(alpha, pi, tau, path, graph):
+def write_SBM_pred_results(
+    alpha: np.ndarray, pi: np.ndarray, tau: np.ndarray, path: str, graph: int
+) -> None:
+    """
+    Write the predicted results (alpha, pi, tau) for an SBM graph to a file.
+
+    Parameters
+    ----------
+    alpha : np.ndarray
+        Predicted alpha vector.
+    pi : np.ndarray
+        Predicted pi matrix.
+    tau : np.ndarray
+        Predicted tau matrix.
+    path : str
+        Path to the results directory.
+    graph : int
+        Index of the graph.
+    """
     np.savez(
         os.path.join(RESULTS_PATH, path, f"graph_{graph}_results.npz"),
         alpha=alpha,
@@ -93,7 +191,24 @@ def write_SBM_pred_results(alpha, pi, tau, path, graph):
     )
 
 
-def load_SBM_pred_results(path, graph):
+def load_SBM_pred_results(
+    path: str, graph: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Load the predicted results (alpha, pi, tau) for an SBM graph from a file.
+
+    Parameters
+    ----------
+    path : str
+        Path to the results directory.
+    graph : int
+        Index of the graph.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
+        Tuple containing alpha, pi, and tau.
+    """
     with np.load(
         os.path.join(RESULTS_PATH, path, f"graph_{graph}_results.npz")
     ) as data:
@@ -103,11 +218,20 @@ def load_SBM_pred_results(path, graph):
     return alpha, pi, tau
 
 
-def write_report(experiment, implementation="pytorch"):
+def write_report(experiment: int, implementation: str = "pytorch_log") -> None:
+    """
+    Write a report containing various metrics for an experiment on SBM dataset.
+
+    Parameters
+    ----------
+    experiment : int
+        Index of the experiment.
+    implementation : str, optional
+        The implementation to use, by default "pytorch_log".
+    """
     experiment_path = os.path.join("SBM", f"experiment_{experiment}")
     with np.load(os.path.join(DATA_PATH, experiment_path, "params.npz")) as params:
         n_graphs = params["n_graphs"]
-        n = params["n"]
         Q = params["Q"]
     passed_graphs = np.load(
         os.path.join(RESULTS_PATH, experiment_path, "passed_graphs.npy")
@@ -221,7 +345,26 @@ def write_report(experiment, implementation="pytorch"):
         )
 
 
-def launch_experiment(experiment=1, n_init=5, n_iter=100, implementation="pytorch"):
+def launch_experiment(
+    experiment: int = 1,
+    n_init: int = 5,
+    n_iter: int = 100,
+    implementation: str = "pytorch_log",
+) -> None:
+    """
+    Launches an experiment with the specified parameters.
+
+    Parameters
+    ----------
+    experiment : int, optional
+        Experiment number, by default 1.
+    n_init : int, optional
+        Number of initializations, by default 5.
+    n_iter : int, optional
+        Number of iterations, by default 100.
+    implementation : str, optional
+        Implementation to use, by default "pytorch_log".
+    """
     experiment_path = os.path.join("SBM", f"experiment_{experiment}")
     with np.load(os.path.join(DATA_PATH, experiment_path, "params.npz")) as params:
         n_graphs = params["n_graphs"]
@@ -263,10 +406,19 @@ def launch_experiment(experiment=1, n_init=5, n_iter=100, implementation="pytorc
     )
 
 
-# Experiments on real datasets
+def show_karate_gt_vs_prediction(G: nx.Graph, tau: np.ndarray, y: np.ndarray) -> None:
+    """
+    Displays a comparison between ground truth and predicted labels for the Karate club dataset.
 
-
-def show_karate_gt_vs_prediction(G, tau, y):
+    Parameters
+    ----------
+    G : networkx.Graph
+        Karate club graph.
+    tau : np.ndarray
+        Predicted labels.
+    y : np.ndarray
+        Ground truth labels.
+    """
     tau = rearrange_tau(tau, y, 2)
 
     color_list = ["g", "c", "r"]
@@ -296,7 +448,29 @@ def show_karate_gt_vs_prediction(G, tau, y):
     plt.show()
 
 
-def report_metrics(X, tau, y, Q, full_clustering_coeff=True):
+def report_metrics(
+    X: np.ndarray,
+    tau: np.ndarray,
+    y: np.ndarray,
+    Q: int,
+    full_clustering_coeff: bool = True,
+) -> None:
+    """
+    Prints various metrics for a graph.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    tau : np.ndarray
+        Predicted labels.
+    y : np.ndarray
+        Ground truth labels.
+    Q : int
+        Number of clusters.
+    full_clustering_coeff : bool, optional
+        Whether to calculate full clustering coefficient, by default True.
+    """
     tau = rearrange_tau(tau, y, Q)
     pred_labels = np.argmax(tau, axis=1)
     print("NMI: {:.3f}".format(normalized_mutual_information(y, pred_labels)))
@@ -317,7 +491,26 @@ def report_metrics(X, tau, y, Q, full_clustering_coeff=True):
     )
 
 
-def draw_dot_plot(X, classification, ground_truth, save_as=None):
+def draw_dot_plot(
+    X: np.ndarray,
+    classification: np.ndarray,
+    ground_truth: np.ndarray,
+    save_as: Optional[str] = None,
+) -> None:
+    """
+    Draws a dot plot for the classified graph.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    classification : np.ndarray
+        Predicted labels.
+    ground_truth : np.ndarray
+        Ground truth labels.
+    save_as : str, optional
+        File name to save the plot, by default None.
+    """
     meta = pd.DataFrame(
         data={
             "Class": classification,
@@ -326,14 +519,38 @@ def draw_dot_plot(X, classification, ground_truth, save_as=None):
     )
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     adjplot(
-        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], group_order = ["Class"], ticks=True, color = "True class", palette = "tab10"
+        data=X,
+        ax=ax,
+        meta=meta,
+        plot_type="scattermap",
+        group=["Class"],
+        group_order=["Class"],
+        ticks=True,
+        color="True class",
+        palette="tab10",
     )
     if save_as is not None:
         plt.savefig(f"images/{save_as}.png")
     plt.show()
 
 
-def write_em_results(alpha, pi, tau, path):
+def write_em_results(
+    alpha: np.ndarray, pi: np.ndarray, tau: np.ndarray, path: str
+) -> None:
+    """
+    Writes EM algorithm results to files.
+
+    Parameters
+    ----------
+    alpha : np.ndarray
+        Alpha parameters.
+    pi : np.ndarray
+        Pi parameters.
+    tau : np.ndarray
+        Predicted labels.
+    path : str
+        Path to save the results.
+    """
     with open(os.path.join(RESULTS_PATH, path, "alpha.pkl"), "wb") as f:
         pickle.dump(alpha, f)
     with open(os.path.join(RESULTS_PATH, path, "pi.pkl"), "wb") as f:
@@ -342,7 +559,20 @@ def write_em_results(alpha, pi, tau, path):
         pickle.dump(tau, f)
 
 
-def load_em_results(path):
+def load_em_results(path: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Loads EM algorithm results from files.
+
+    Parameters
+    ----------
+    path : str
+        Path to load the results.
+
+    Returns
+    -------
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
+        Alpha, pi, and tau parameters.
+    """
     with open(os.path.join(RESULTS_PATH, path, "alpha.pkl"), "rb") as f:
         alpha = pickle.load(f)
     with open(os.path.join(RESULTS_PATH, path, "pi.pkl"), "rb") as f:
