@@ -6,6 +6,19 @@ Paper : [A mixture model for random graphs](https://inria.hal.science/inria-0007
 
 This project implements in python the variational EM algorithm proposed by Daudin et. al. to estimate the parameters of a Stochastic Block Model.
 
+## Usage
+
+Generate a random graph with 3 clusters with the Stochastic Block Model and estimate its parameters with the EM algorithm :
+```python
+from src import em_algorithm, random_graph
+
+X, Z, alpha, pi = random_graph(Q=3)
+
+alpha_hat, pi_hat, Z_hat, _ = em_algorithm(
+    X, Q=3, implementation="numpy", n_init=3, iterations=100, verbose=True
+)
+```
+
 ## Report
 
 The report is available [here](report/report.pdf).
