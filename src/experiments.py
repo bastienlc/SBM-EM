@@ -325,7 +325,7 @@ def draw_dot_plot(X, classification, save_as=None):
     )
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     adjplot(
-        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], ticks=True
+        data=X, ax=ax, meta=meta, plot_type="scattermap", group=["Class"], group_order = ["Class"], ticks=True
     )
     if save_as is not None:
         plt.savefig(f"images/{save_as}.png")

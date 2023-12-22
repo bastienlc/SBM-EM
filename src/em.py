@@ -143,3 +143,18 @@ def em_algorithm(
             impl.output(best_tau),
             log_likelihoods,
         )
+    except (
+        Exception
+    ) as e:  # If another exception is raised, return the best parameters so far
+        if verbose:
+            print("")
+        print(
+            "An exception was raised but the best parameters so far were returned :", e
+        )
+        alpha, pi = impl.m_step(X, best_tau)
+        return (
+            impl.output(alpha),
+            impl.output(pi),
+            impl.output(best_tau),
+            log_likelihoods,
+        )
