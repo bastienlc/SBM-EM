@@ -136,7 +136,7 @@
 \maketitle
 
 \begin{contribstatement}
-    The Daudin-EM was implemented in Numpy and Pytorch by Bastien Le Chenadec. The Newman variant was added by Sofiane Ezzehi, as well as the spectral clustering algorithm. The experiments were performed by Theïlo Terrisse. The report was written by all three authors.
+    The Stochastic Block Model-based variational EM \cite{main_article} was implemented in Numpy and Pytorch by Bastien Le Chenadec. The Newman variant \cite{newman} was added by Sofiane Ezzehi, as well as the spectral clustering algorithm \cite{spectral}. The experiments were designed and performed by Theïlo Terrisse. The report was written by all three authors.
 \end{contribstatement}
 \vspace{0.35cm}
 
@@ -153,16 +153,16 @@
     \begin{equation}
         \delta_{ext} = \frac{\text{\# inter-cluster edges of C}}{n_C (n - n_C)}
     \end{equation}
-    with $n$ the number of nodes of the graph, $n_C$ the number of nodes in the cluster $C$.
+    with $n$ the number of nodes of the graph and $n_C$ the number of nodes in the cluster $C$.
     % and internal (resp. inter-cluster) edges are edges between nodes of $C$ (resp. between nodes of $C$ and nodes outside of $C$).
     Some applications may also be interested in \emph{heterophilic} clusters, defined such that $\delta_{int}(C) < \delta_{ext}(C)$.
     Graph clustering has tremendous applications in the study of real networks such as
-    social [1] or biological [4]. This problem is of importance to perform a mesoscopic study of graphs, where clusters can be interpreted as meta-nodes that reveal new interactions  within a complex system.
+    social [1] or biological [4]. This problem is of importance to perform mesoscopic studies of graphs, where clusters can be seen as meta-nodes to reveal interactions within a complex system.
 
 
     Graph clustering is known to be an NP-hard problem, as testing all possible partitions of a graph has complexity $\O(B_n)$ with $B_n$ the Bell number of order $n$. This is particularly poblematic as real networks easily grow to thousands or even millions of nodes. Several classes of algorithms are documented in the literature \cite{fortunato_community_2010}. To name a few, modularity-based approaches solve an optimization problem that maximizes modularity (defined in Section \ref{subsec:metrics}); hierarchical algorithms rely on similarity measures to aggregate or divide groups of nodes; spectral algorithms also rely on a similarity matrix, but operate in the space spanned by the eigenvectors of its Laplacian matrix. Yet, defining a similiarty measure between nodes is not always trivial.
 
-    Model-based methods are an alternative to algorithmic methods, that aim to fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph. In this report, their method will be referred to as ``Daudin-EM''.
+    Model-based methods are an alternative to algorithmic methods, that aim to fit a mathematical model capable of explaining the observed connectivity, and from which descriptive properties of a graph may be extracted or computed. The Stochastic Block Model (SBM) introduced in \cite{snijders_estimation_1997} is a renowned example of model for graphs. In \cite{main_article}, J.-J. Daudin \textit{et al.} study this model and propose a variational Expectation-Maximization (EM) algorithm to find parameters that best fit a given graph. We will refer to this method as ``Daudin-EM''.
 
     In this report, we detail the Daudin-EM method as well as a variant from the literature in Section \ref{sec:method}. In Section \ref{sec:experiments}, we present our implementation of the method and the experiments performed to evaluate it, with a discussion of the results in Section \ref{sec:discussion}. Lastly, we conclude in Section \ref{sec:conclusion}.
 
@@ -170,13 +170,13 @@
     \section{Proposed methods and variants}
     \label{sec:method}
 
-    \subsection{A mixture model for random graphs \cite{main_article}}
+    \subsection{A mixture model for random graphs}
     \label{subsec:mixture_model}
     In "A mixture model for random graphs" \cite{main_article}, Daudin \textit{et. al.} propose a bayesian model for graphs, and an EM approach to fit this model to a given graph.
 
     We will follow the same notations as in \cite{main_article}. We consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph. As such, $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$, and $\forall i\in \left\{1,\dots,n\right\}, X_{ii}=0$.
 
-    As explained by the authors, the SBM draws inspiration both from mixture models for distribution of degrees, that have the disadvantage of not dealing with the probability for two given nodes to be connected, and from the foundational Erdös-Rényi model, which is known to fit real graphs poorly. To define the SBM, we consider a mixture model that spreads the vertices in $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the membership of node $i$ to class $q$. We have the following prior distribution on $Z$:
+    As explained by the authors, the SBM draws inspiration both from mixture models for distribution of degrees, that have the disadvantage of not dealing with the probability for two given nodes of being connected, and from the foundational Erdös-Rényi model, which is known to fit real graphs poorly. To define the SBM, we consider a mixture model that spreads the vertices into $Q$ classes, with an a priori repartition $\{\alpha_1, \dots, \alpha_Q\}$ between classes. We introduce the random variables $Z_{iq} \in \{0,1\}$ for $i\in \left\{1,\dots,n\right\}$ and $q\in \left\{1,\dots,Q\right\}$, that represent the membership of node $i$ to class $q$. We have the following prior distribution on $Z$:
     \begin{equation}
         \forall i\in \left\{1,\dots,n\right\}, \quad \sum_{q=1}^Q Z_{iq} = 1
     \end{equation}
@@ -257,6 +257,7 @@
     \end{equation}
 
     \subsubsection{Selection of $Q$}
+    \label{subsubsec:icl}
 
     In practice the number of clusters $Q$ has to be estimated. The authors propose to use a criterion based on the Integrated Classification Likelihood (ICL) which writes :
     \begin{equation}
@@ -265,9 +266,9 @@
         \end{aligned}
     \end{equation}
 
-    This criterion requires the knowledge of the parameters $\theta$ of the model. We will need to estimate them using the EM algorithm.
+    This criterion requires the knowledge of the parameters $\theta$ of the model, which we will estimate using the EM algorithm.
 
-    \subsection{An alternative mixture-model by Newman et. al. \cite{newman}}
+    \subsection{An alternative mixture-model by Newman et. al.}
     \label{subsec:newman}
 
     A different mixture model has been proposed the same year as Daudin-EM, by Newman \textit{et al.} \cite{newman}. The main difference lies in the way a cluster is defined. In the previous model, the probability of connection between a node in cluster $A$ and a node in cluster $B$ is the same, regardless of the considered nodes.
@@ -322,15 +323,33 @@
     \section{Experiments}
     \label{sec:experiments}
 
-    The experiments we have carried out can be separated into three parts, all based on a re-implementation the methods covered in Section \ref{sec:method}. A first experiment illustrates the lack of robustness of the fixed-point algorithm used in the E-step of the Daudin-EM algorithm.
-    Second, Daudin-EM is tested isolately on synthetic graphs generated from the SBM introduced in Section \ref{subsec:mixture_model}. This set of experiments aims at studying the capacity of the proposed variational EM algorithm to recover parameters for given graphs, but also the efficiency of the model in terms of graph clustering.
-    Lastly, the performance of the mixture model is evaluated on classical real datasets, namely Zachary's Karate club and the Cora dataset. This performance is compared to the baselines presented in Sections \ref{subsec:newman} and \ref{subsec:spectral}.
+    The experiments we have carried out can be separated into three parts, all based on a re-implementation of the methods covered in Section \ref{sec:method}. A first experiment illustrates the lack of robustness of the fixed-point algorithm used in the E-step of the Daudin-EM algorithm.
+    Second, Daudin-EM is tested isolately on synthetic graphs generated from the SBM introduced in Section \ref{subsec:mixture_model}, both in terms of model-fitting capacity and graph clustering power.
+    Lastly, the performance of the mixture model is evaluated on classical real datasets, namely Zachary's karate club and the Cora dataset. This performance is compared to the baselines presented in Sections \ref{subsec:newman} and \ref{subsec:spectral}.
 
     \subsection{Implementation}
 
-    All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) was implemented in Python using Numpy, and later in Pytorch to distribute the computations on a GPU. A second Pytorch implementation was added to handle memory issues occurring for large graphs. The Newman variant was directly implemented in Pytorch. As an indication, a speed comparison \textcolor{red}{Est-elle à jour ?} between the versions of the mixture model is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report. %due to a lack of time and to avoid exploring too many directions
+    All of the experiments were performed using the code attached with this report. The Daudin-EM method (simply referred to as ``SBM'' in the code) was implemented in Python using Numpy, and later in Pytorch to distribute the computations on a GPU. A second Pytorch implementation was added to handle memory issues occurring for large graphs. The Newman variant was directly implemented in Pytorch. As an indication, a speed comparison between the versions of the method is available in appendix \ref{app:speed_comparison}. The spectral clustering algorithm was implemented in Numpy in a dedicated notebook. Lastly, the algorithm proposed by Lancichinetti, Fortunato, and Kertesz in \cite{lancichinetti_detecting_2009} to deal with overlapping communities was implemented in Numpy, but was not exploited in experiments for conciseness of this report.
 
-    The implementation also comes with a battery of tests to validate the implementations, as well as scripts and notebooks to reproduce and visualize the experiments. All experiences used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case. For visualizations, we used the Networkx library.
+    The code comes with a battery of tests to validate the implementations. Scripts and notebooks to reproduce and visualize the experiments are also available; please refer to the \texttt{README.md} file in the attached code to know on what notebook each experiment is run. All experiments used Pytorch implementations when available, especially the \texttt{PytorchLogImplementation} for Daudin-EM, except for the smallest graphs of the second set of experiments that used the Numpy version as it was faster in this case. For visualizations, we used the Networkx library.
+
+    \begin{figure*}
+        \centering
+        \begin{subfigure}{0.49\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{figures/fixed_point_convergence_fixed_tau.png}
+            \caption{Fixed initial $\tau$, variable initial $\alpha$ and $\pi$.}
+            \label{fig:fixed_point_cv_tau}
+        \end{subfigure}
+        \begin{subfigure}{0.49\linewidth}
+            \centering
+            \includegraphics[width=0.9\linewidth]{figures/fixed_point_convergence_fixed_X_alpha_pi.png}
+            \caption{Variable initial $\tau$, fixed initial $\alpha$ and $\pi$.}
+            \label{fig:fixed_point_cv_X}
+        \end{subfigure}
+        \caption{Convergence of the fixed point algorithm. Green curves converged within $100$ iterations; red curves did not.}
+        \label{fig:fixed_point_cv}
+    \end{figure*}
 
     \subsection{Robustness of the fixed-point algorithm}
     \label{subsec:robustness}
@@ -342,38 +361,17 @@
         \item In the first experiment, we initialize $50$ random graphs and fix a random $\hat{\tau}$ to get $50$ initial states.
         \item In the second experiment, we fix a random graph and initialize $50$ random $\hat{\tau}$ to get $50$ initial states.
     \end{enumerate}
-    In each experiment, the graphs are generated using the SBM described in Section \ref{subsec:mixture_model}, with $Q=3$ and $100$ nodes. More precisely, $\alpha$ and $\pi$ are initialized randomly, then the latent variable $Z$ is sampled from \eqref{eq:prior_Z}, and finally the adjacency matrix $X$ is sampled from \eqref{eq:conditional_distribution}. Random $\hat{\tau}$s are sampled as a normalized uniform variable.
+    In each experiment, the graphs are generated using the SBM described in Section \ref{subsec:mixture_model}, with $Q=3$ and $100$ nodes. More precisely, $\alpha$ and $\pi$ are initialized randomly, then the latent variable $Z$ is sampled from \eqref{eq:prior_Z}, and finally the adjacency matrix $X$ is sampled from \eqref{eq:conditional_distribution}. Random $\hat{\tau}$s are sampled as normalized uniform variables.
     % To generate a random graph, we first sample $\pi$ by sampling $U \sim \mathcal{U}([0, 1))$, defining $\pi = U U^T$ and normalizing the rows of $\pi$. Each row is also multiplied by $\frac{1}{2}$ to set the density of the connectivity of the graph. Then, we sample $\alpha$ from a Dirichlet law of variable $1.5$. Later, the latent variable $Z$ is sampled from \eqref{eq:prior_Z} and the adjacency matrix $X$ is sampled from \eqref{eq:conditional_distribution}. A random $\hat{\tau}$ is sampled as a normalized uniform variable.
-    In each experiment, $100$ fixed-point algorithm iterations are run. These fixed-point iterations are run in parallel for the $50$ initial states, resulting in figures \ref{fig:fixed_point_cv_tau} and \ref{fig:fixed_point_cv_X} which plot the norm of the difference of $\hat{\tau}$ between two successive iterations as a function of the iteration, for all graphs, and for the two experiences.
-
-    Code for this experiment is available in file \texttt{fixed\_point\_convergence.py}.
+    In each experiment, $100$ fixed-point algorithm iterations are run in parallel for the $50$ initial states, resulting in figures \ref{fig:fixed_point_cv_tau} and \ref{fig:fixed_point_cv_X} which plot the norm of the difference of $\hat{\tau}$ between two successive iterations as a function of the iteration, for all graphs, and for the two experiments.
 
 
-    \begin{figure*}
-        \centering
-        \begin{subfigure}{0.49\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures/fixed_point_convergence_fixed_tau.png}
-            \caption{Fixed $\tau$, variable $\alpha$, $\pi$ and $\tau$.}
-            \label{fig:fixed_point_cv_tau}
-        \end{subfigure}
-        \begin{subfigure}{0.49\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures/fixed_point_convergence_fixed_X_alpha_pi.png}
-            \caption{Variable $\tau$, fixed $\alpha$, $\pi$ and $\tau$.}
-            \label{fig:fixed_point_cv_X}
-        \end{subfigure}
-        \caption{Convergence of the fixed point algorithm. Green curves converged within $100$ iterations; red curves did not.}
-        \label{fig:fixed_point_cv}
-    \end{figure*}
-
-
-    \subsection{Metrics}
+    \subsection{Clustering metrics}
     \label{subsec:metrics}
 
     The literature offers various metrics to assess the quality of a clustering. For our experiments, we re-implemented some supervised and unsupervised metrics.
 
-    \paragraph{Supvervised metrics} By ``supervised metrics'', we designate metrics that compare the labelling of nodes $C^P$ as predicted by a clustering method, with a ground truth labelling $C^T$ that is supposed to be given. We used two classical ones, the Rand index (RI) and the normalized mutal information (NMI).
+    \paragraph{Supvervised metrics} By ``supervised metrics'', we designate metrics that compare the labelling of nodes $C^P$ as predicted by a clustering method, with a ground truth labelling $C^T$ that is supposed to be given. We have used the Rand index (RI) and the normalized mutal information (NMI).
 
     RI measures the similarity of two clusterings by measuring how consistently the two clusterings identify edges as connecting nodes of a same cluster, or of different clusters:
     \begin{equation}
@@ -395,16 +393,17 @@
     \begin{equation}
         \mathrm{M}(C) = \sum_{i=1}^{|C|} \left(\frac{e_i}{m} - \left(\frac{d_i}{2m}\right)^2 \right)
     \end{equation}
-    with $m$ the number of edges in the graph, and $e_i$ and $d_i$ respectively the number of edges and total degree of nodes in cluster $C_i$.
+    with $m$ the total number of edges, and $e_i$ and $d_i$ respectively the number of edges and total degree of nodes in cluster $C_i$.
 
     Additionally, we use the clustering coefficient defined as the ratio of all triangles within a set of nodes $C$, over the total number of triplets of nodes within this set; using the adjacency matrix, this writes:
     \begin{equation}
         \mathrm{CC}(C) = \frac{\displaystyle \sum_{i, j, k \in C} X_{ij} X_{jk} X_{ki}}{\displaystyle
             \sum_{i \in C} k_i (k_i - 1)}
     \end{equation}
-    with $k_i$ the degree of node $i$. We will use this metric both at the scale of clusters (to determine their individual qualities) and of whole graphs to measure their clustering tendency. To close this section on metrics, note that the SBM model defined in Section \ref{subsec:mixture_model} allows a computation of the expected clustering coefficient associated to graphs generated by a given set of parameters ($\alpha, \pi$):
+    with $k_i$ the degree of node $i$. We will use this metric both at the scale of clusters (to determine their individual qualities) and of whole graphs (to measure their clustering tendency). To close this section on metrics, note that the SBM model defined in Section \ref{subsec:mixture_model} allows a computation of the expected clustering coefficient associated to graphs generated by a given set of parameters ($\alpha, \pi$):
     \begin{equation}
-        \mathrm{CC}_{\mathrm{SBM}} = \frac{\displaystyle  \sum_{q, l, m \in \intset{1}{Q}} \alpha_q \, \alpha_l \, \alpha_m \, \pi_{ql} \, \pi_{qm} \, \pi_{lm}}{\displaystyle  \sum_{q, l, m \in \intset{1}{Q}} \alpha_q \, \alpha_l \, \alpha_m \, \pi_{ql} \, \pi_{qm}}.
+        \label{eq:SBM_CC}
+        \mathrm{CC}_{\mathrm{SBM}}(\alpha, \pi) = \frac{\displaystyle  \sum_{q, l, m \in \intset{1}{Q}} \alpha_q \, \alpha_l \, \alpha_m \, \pi_{ql} \, \pi_{qm} \, \pi_{lm}}{\displaystyle  \sum_{q, l, m \in \intset{1}{Q}} \alpha_q \, \alpha_l \, \alpha_m \, \pi_{ql} \, \pi_{qm}}.
     \end{equation}
 
 
@@ -429,17 +428,17 @@
 
     \subsection{Testing on SBM datasets}
 
-    This second set of experiments aimed at evaluating the Daudin-EM algorithm is 3-fold:
+    The aim of this second set of experiments performed on Daudin-EM is 3-fold:
     \begin{enumerate}
         \item assessing the capacity of the algorithm to recover the parameters of the model that generated a given graph;
         \item assessing the performance of the algorithm in terms of graph clustering;
-        \item experimenting with ICL to select the number of clusters. \textcolor{red}{A voir}
+        \item experimenting with ICL to select the number of clusters.
     \end{enumerate}
 
 
-    \paragraph{Bulding the dataset} Using the SBM, we generate 6 batches of $10$ graphs to test the method on. Each batch is generated using a specific set of parameters with the intent of modelling a specific type of graphs, as indicated by the name of the associated experience. The parameters of the SBM for each batch are given in Table \ref{tab:sbm_parameters}, $\mathrm{Dir}$ the Dirichlet law, $\varepsilon_1 = 0.1$, $\varepsilon_2 = 0.01$, $a = 0.7$ and $b = 0.8$. Note that $\pi$ was made symmetric, normalized and scaled in experiments 1 and 2. Sample graphs from each batch are visualized on Figure \ref{fig:sample_graphs} in appendix.
+    \paragraph{Bulding the dataset} Using the SBM, we generate 6 batches of $10$ graphs to test the method on. Each batch is generated using a specific set of parameters with the intent of modelling a specific type of graphs, as indicated by the name of the associated experiment. The parameters of the SBM for each batch are given in Table \ref{tab:sbm_parameters}, with $\mathrm{Dir}$ the Dirichlet law, $\varepsilon_1 = 0.1$, $\varepsilon_2 = 0.01$, $a = 0.7$ and $b = 0.8$. Note that $\pi$ was made symmetric, normalized and scaled in experiments 1 and 2. Sample graphs from each batch are visualized on Figure \ref{fig:sample_graphs} in appendix.
 
-    \paragraph{Assessing parameter recovering performance} Because the graphs are precisely generated using the same model as the one we are trying to fit, these experiments are primarily designed to estimate the performance of the proposed EM algorithm. In particular, a ground truth $(\alpha{\mathrm{T}}, \pi_{\mathrm{T}})$ is trivially given for the expected best-fitting model. Consequently, we could simply measure the distance between the laws induced by the predicted $(\alpha_P, \pi_P)$ and the ground truth $(\alpha{\mathrm{T}}, \pi_{\mathrm{T}})$. However, as explained in \cite{main_article}, the likelihood of an adjacency matrix $X$ given a choice of parameters is intractable, making it hard to apply criteria like the Kullback-Leibler divergence or the $\chi^2$ statistic. We have considered using the relative distance between $\mathcal{J(R_X(\cdot; \tau_P)}$ computed for both sets of parameters, but ditched this metric due to its lack of interpretability across batches. Ultimately, \textcolor{red}{even though this solution is not ideal, [ça vous va ?]} we decided to simply sum the Euclidean distances between $\alpha_T$ and $\alpha_P$ and between $\pi_T$ and $\pi_P$, normalized by the number of classes.
+    \paragraph{Assessing parameter recovering performance} Because the graphs are precisely generated using the same model as the one we are trying to fit, these experiments are primarily designed to estimate the performance of the proposed EM algorithm. In particular, a ground truth $(\alpha_{\mathrm{T}}, \pi_{\mathrm{T}})$ is trivially given for the expected best-fitting model. Consequently, we could simply measure the distance between the laws induced by the predicted $(\alpha_P, \pi_P)$ and $(\alpha_{\mathrm{T}}, \pi_{\mathrm{T}})$. However, the intractability of the likelihood for SBM makes it hard to apply criteria like the Kullback-Leibler divergence or the $\chi^2$ statistic. We have considered using the relative distance between $\mathcal{J}(R_X)$ computed for both sets of parameters, but ditched this metric due to its lack of interpretability across batches. Ultimately, we decided to simply sum the Euclidean distances between $\alpha_T$ and $\alpha_P$ and between $\pi_T$ and $\pi_P$, normalized by the number of classes. More precisely, we retain the minimum such distance over all possible permutations of the predicted clusters, to avoid penalizing an indexing of clusters that would be different from the ground truth.
 
     % Instead, we re-use the lower bound $\mathcal{J}$ introduced in Section \ref{subsec:mixture_model} as a proxy for the likelihood, and compute the relative error $\mathrm{RE}_\J$ between the lower bounds obtained with the ground truth and the predicted parameters. Denoting $(\alpha_P, \pi_P, \tau_P)$ the predicted parameters and $(\alpha_T, \pi_T, z)$ the ground truth used for the generation (with $z$ the value of the latent variable $Z$ sampled from \eqref{eq:prior_Z}), this writes:
     % \begin{equation}
@@ -451,14 +450,16 @@
     \begin{equation}
         \quad C^T_i = \argmax_q z_{iq} \quad \text{and} \quad C^P_i = \argmax_q \hat{\tau}_{iq}.
     \end{equation}
-    with $\hat{\tau}$ the predicted value of $\tau$ output by the algorithm. For more intepratbility of modularity, instead of averaging over graphs, we choose the graph that produced largest modularity with the predicted parameters.
+    with $\hat{\tau}$ the predicted value of $\tau$ output by the algorithm and $z$ the latent variable sampled to generate the graph. Also, for more interpretability of modularity, instead of averaging over graphs, we choose the graph that produces largest modularity with the predicted parameters and compute ground truth and predicted modularity on this graph.
 
-    \paragraph{Running the experiments} each experiment is run for $100$ iterations, and each time using $5$ random initializations of $\alpha$ and $\pi$ to limit the effects of the lack of robustness underlined in Section \ref{subsec:robustness}.
+    \paragraph{Testing the ICL criterion} We test the ICL criterion separately, on a single graph from experiments $1$, $4$ and $5$, testing values of $Q$ respectively in $\intset{1}{4}$, $\{1, 3, 5, 7\}$ and $\intset{1}{4}$.
 
-    The results of the experiments are presented in Table \ref{tab:sbm_results}, along with sample predictions on Figure \ref{fig:pred_graphs} in appendix. Note that, due to the lack of robustness underlined in Section \ref{subsec:robustness}, Daudin-EM did not converge within the budget of $1000$ iterations for all graphs. This is why the number of passed graphs is indicated in the results.
+    \paragraph{Running the experiments} Each experiment is run for $100$ iterations, and each time using $5$ random initializations of $\alpha$ and $\pi$ to limit the effects of the lack of robustness underlined in Section \ref{subsec:robustness}. For each experiment, excluding tests on ICL criterion, the true number of classes $Q$ is considered given.
+
+    The results of the experiments are presented in Table \ref{tab:sbm_results} in appendix, along with sample predictions on Figure \ref{fig:pred_graphs}. Note that, due to the lack of robustness underlined in Section \ref{subsec:robustness}, the fixed-point algorithm did not converge within the budget of $1000$ iterations for all graphs. This is why the number of passed graphs is indicated in the results. Lastly, the ICL criterion wrongly predicts a best number of classes $Q=1$ for experiment $1$ and $Q=3$ for experiment $3$, but correctly predicts $Q=2$ for experiment $5$.
 
 
-    \subsection{Comparison to variants}
+    \subsection{Comparison to alternatives}
 
     In the last set of experiments, the Daudin-EM method \cite{main_article} described in Section \ref{subsec:mixture_model} is tested on real graphs and compared with 2 other methods:
     \begin{enumerate}
@@ -473,13 +474,13 @@
         \item Zachary's Karate-club dataset: Published in an Anthropology journal in 1977 \cite{karate}, it describes the friendship between 34 members of a karate club at a US university after an internal dispute that split the social relationships in two factions. The graph is undirected and contains 34 nodes and 78 edges. Figure \ref{fig:zachary_gt} shows the ground truth of the dataset.
         \item The Cora dataset: A citation network of scientific publications \cite{cora}. The graph is undirected and contains 2708 nodes(=papers) and 5429 edges(=citations). The nodes are labeled with 7 different classes. Figure \ref{fig:cora_gt} shows the dot-plot representation of the adjacency matrix of the ground truth, with associated labels.
     \end{enumerate}
-    While the Karate-club dataset is a small graph with a clear community structure, the Cora dataset is a much larger graph with a more complex structure. Both datasets are constructed from real-world data and observations which makes them interpretable. They also have a ground truth that we can use to evaluate the performance of the algorithms.
+    A third dataset similar to that used in \cite{main_article}, the Escherichia-Coli metabolic network available on \href{www.ecocyc.org}{www.ecocyc.org} \cite{keseler_ecocyc_2021}, was also considered, but was eventually abandoned as it was not as interpretable as Cora. While the Karate-club dataset is a small graph with a clear community structure, the Cora dataset is a much larger graph with a more complex structure. Both datasets are constructed from real-world data and observations which makes them interpretable. They also have a ground truth that we can use to evaluate the performance of the algorithms.
 
-    \paragraph{Running the experiments} For Zachary's karate club, Daudin-EM and Newman-EM are run for $100$ iterations. For Daudin-EM, using $20$ parallel initializations of $(\alpha, \pi, \tau)$ to increase probability of converging.
+    \paragraph{Running the experiments} For Zachary's karate club, Daudin-EM and Newman-EM are run for $100$ iterations. For Daudin-EM, $5$ parallel initializations of $(\alpha, \pi, \tau)$ are used to increase the probability of converging.
     For Cora, they are run for $50$ iterations, using $10$ initializations of $(\alpha, \pi, \tau)$.
-    In both cases, the spectral clustering algorithm is run once.
+    In both cases, the spectral clustering algorithm is run once. For this set of experiments, the true number of classes $Q$ was considered given.
 
-    Figures \ref{fig:zachary_results} and \ref{fig:cora_results} show for both datasets the true clusterings and those proposed by the 3 methods, and tables \ref{tab:zachary_results} and \ref{tab:cora_results} show the resulting metrics.
+    Figures \ref{fig:zachary_results} and \ref{fig:cora_results} show for both datasets the true clusterings and those proposed by the 3 methods, and tables \ref{tab:zachary_results} and \ref{tab:cora_results} show the resulting metrics. For Cora, a reordering of the predicted clusters has been applied so as to coincide as much as possible with ground truth classes. To close this part, we also computed the estimation of the global clustering coefficient using $\eqref{eq:SBM_CC}$ and obtained $0.211$ for Zachary's karate club and $0.006$ for Cora.
 
 
 
@@ -490,24 +491,26 @@
     \label{sec:discussion}
 
     \paragraph{First set of experiments}
-    From the first set of experiments, we understand that the main weakness of Daudin-EM is the difficult convergence of the fixed-point algorithm of the E-step. In particular, as observed on Figure \ref{fig:fixed_point_cv}, this algorithm is particularly sensitive to the initialization on $(\alpha, \pi)$, but not as much on the initialization of $\tau$. Some ideas have been tested to solve this, such as applying a momentum-based formula of the form $\hat{\tau}_{n+1} = \hat{\tau}_{n} + \gamma \hat{\tau}_{n}^{\mathrm{FP}}$ for the $n$\textsuperscript{th} E-step, with $\gamma$ an update rate and $\hat{\tau}_{n}^{\mathrm{FP}}$ the result of the fixed-point algorithm; but this showed little improvement.
+    From the first set of experiments, we understand that the main weakness of Daudin-EM is the difficult convergence of the fixed-point algorithm of the E-step. In particular, as observed on Figure \ref{fig:fixed_point_cv}, this algorithm is particularly sensitive to the initialization on $(\alpha, \pi)$, but not as much on the initialization of $\tau$. Some ideas have been tested to solve this, such as applying a momentum-based formula of the form $\hat{\tau}_{n+1} = \hat{\tau}_{n} + \gamma \hat{\tau}_{n}^{\mathrm{FP}}$ for the $n$\textsuperscript{th} E-step, with $\gamma \in (0, 1]$ an update rate and $\hat{\tau}_{n}^{\mathrm{FP}}$ the result of the fixed-point algorithm; but this showed little improvement.
 
     \paragraph{Second set of experiments}
-    In the SBM experiments, we observe that Daudin-EM performs generally rather poorly, both for fitting the SBM and clustering graphs. In particular, it has a tendency to predict only one cluster (resulting in null NMI), especially for clear-cut clusters (both homophilic and heterophilic). On the other hand, it brings better model-fitting performance for random graphs, especially large ones, and also yields high supervised metrics in this case. Lastly, it achieves near-perfect results for the ``High-degree-minority'' case of experiment 5 according to both criteria, with a modularity that is rightly negative in this instance of graph type.
+    In the SBM experiments, we observe that Daudin-EM performs generally rather poorly, both for fitting the SBM and clustering graphs. In particular, it has a tendency to predict only one cluster (resulting in null NMI), especially for clear-cut clusters (both homophilic and heterophilic). On the other hand, it brings better model-fitting performance for random graphs, especially large ones, and also yields higher supervised metrics in this case. Lastly, it achieves near-perfect results for the ``High-degree-minority'' case of experiment 5 according to both criteria, with a modularity that is rightly negative in this instance of graph type.
 
-    To sum up, Daudin-EM seems bad at detecting clusters, especially rather homogeneous ones. Our main observation is that this method seems very sensitive to the distribution of degrees of nodes, as rather homogeneous clusters are hardly distinguished by this quantity. This would also explain the best results observed for experiment 5. One way to alleviate this problem might be to offer semi-supervised guidance to enforce a favourable initialization.
+    To sum up, Daudin-EM seems bad at detecting clusters, especially rather homogeneous ones. Our main observation is that this method seems very sensitive to the distribution of degrees of nodes, which would explain bad performance on experiments $3$, $4$ and $6$ as rather homogeneous clusters are hardly distinguished by this quantity. This would also explain the best results observed for experiment $5$. One way to alleviate this problem might be to offer semi-supervised guidance to enforce a favourable initialization.
 
-    \paragraph{Third set of experiments} For both datasets, Daudin-EM brings mostly dissatisfying performance, especially when compared with Newman which always give the best results. As for the spectral clustering method, it is behaves well on Zachary's karate club, but very badly on Cora, probably due to its large size. Daudin-EM is also particularly slow, notably due to the number of iterations required for convergence of the E-step.
+    \paragraph{Third set of experiments} For both datasets, Daudin-EM brings mostly dissatisfying performance, especially when compared with Newman which always gives the best results. As for the spectral clustering method, it behaves well on Zachary's karate club, but very badly on Cora, probably due to its large size. Daudin-EM is also particularly slow, notably due to the number of iterations required for convergence of the E-step. Nevertheless, the clustering coefficients estimated using $\eqref{eq:SBM_CC}$ fall close to their empirical values, although they are a bit underestimated.
 
     For Zachary's karate club, Daudin-EM yields low NMI and RI, as well as a negative modularity. On the other hand, the resulting per-cluster clustering coefficients are higher than that of the ground truth clusters in average, thus revealing clusters of better quality from that perspective.
 
-    On the other hand, Daudin-EM brought interesting results for Cora. Indeed, the supervised metrics are comparable to those for Newman-EM. Furthermore, although the final modularity is quite low with Daudin-EM, and despite some clusters having a clustering coefficient of 0, the method reveals some good-quality clusters, especially clusters 2 and 4. Additionally, cluster 5 is interesting as it gathers papers that cite (or are cited by) many papers from many different themes, as is probably the case for papers that fall within the ``neural networks'' category. Thereby, the method succeeds to bring a new perspective to the dataset that does not restrict to homophily-driven clustering.
+    On the other hand, Daudin-EM brought interesting results for Cora. Indeed, the supervised metrics are comparable to those for Newman-EM. Furthermore, although the final modularity is quite low with Daudin-EM, and despite some clusters having a clustering coefficient of 0, the method reveals some good-quality clusters, especially clusters 2 and 4. Cluster 2 is particularly well preserved, as ``genetic algorithms'' might be somewhat isolated from the other considered scientific subjects. Additionally, cluster 5 is interesting as it gathers papers that cite (or are cited by) many papers from many different scientific topics: this cluster probably gathers survey articles. Thereby, the method succeeds to bring a new perspective on the dataset that does not restrict to homophily-driven clustering.
 
 
     \section{Conclusion}
     \label{sec:conclusion}
 
-    The SBM-based variational EM method introduced by Daudin \textit{et. al.} in \cite{main_article} has been presented, along with another EM-method from Newman \& Leicht \cite{newman} and the spectral-clustering baseline. Daudin-EM relies on an approximate maximization of the log-likelihood of the law induced by the SBM model, to circumvent the intractability of this law and of its conditional law given the membership of nodes to classes. We have illustrated that the main flaw of this algorithm is the unproven and unreliable convergence of the fixed-point-based E-step, a flaw not shared by Newman-EM which benefits from a closed-form solution. This is at the root of a lack of robustness of the method as well as to its lengthy execution due to numerous iterations. Testing on several datasets revealed poor performance of the method against Newman-EM, but better performance against spectral clustering on Cora. In particular, the experiments hinted towards a large sensitivity of the method node degree distributions and a tendency to gather nodeds into clusters as large as possible. [better perf on large graphs and reveals properties different from other clustering methods]
+    The SBM-based variational EM method introduced by Daudin \textit{et. al.} in \cite{main_article} has been presented, along with another EM-method from Newman \& Leicht \cite{newman} and with the spectral-clustering baseline \cite{spectral}. Daudin-EM relies on an approximate maximization of the log-likelihood of the law induced by the SBM model, so as to circumvent the intractability of this law - and of the conditional law given the membership of nodes to classes. We have illustrated that the main flaw of this algorithm is the unproven and unreliable convergence of the fixed-point-based E-step, a flaw not shared by Newman-EM which benefits from a closed-form solution. This is at the root of a lack of robustness of the method as well as to its lengthy execution due to numerous iterations being required. Testing on several datasets revealed poor performance of the method against Newman-EM, but better performance against spectral clustering on Cora. In particular, the experiments hinted towards a large sensitivity of the method to node degree distributions and a tendency to gather nodes into clusters as large as possible.  On the other hand, it behaves better when applied to large graphs, and may reveal clustering properties that are not revealed by other clustering methods.
+
+    Further work may include trying other strategies to maximize the lower bound of \eqref{eq:lower_bound} with respect to $\tau$, for instance using a projected gradient descent; testing Daudin-EM on semi-supervised graph problems; and reflecting on how to extend this method to overlapping clusters, a class of problems over-viewed in \cite{xie_overlapping_2013}.
 
 
     \newpage
@@ -531,7 +534,7 @@
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.5\linewidth]{figures/speed_comparison_VEM.png}
-    \caption{Speed comparison (in seconds) between implementations of the SBM-VEM for the mixture model. Each implementation was run 10 times, for 10 runs on a graph randomly generated using SBM for 100 nodes and 3 classes.}
+    \caption{Speed comparison (in seconds) between implementations of Daudin-EM. Each implementation was run 10 times, for 10 runs on a graph randomly generated using SBM for 100 nodes and 3 classes.}
     \label{fig:speed_comparison}
 \end{figure}
 
@@ -630,7 +633,7 @@
     \label{fig:pred_graphs}
 \end{figure*}
 
-\begin{table*}[h]
+\begin{table*}[ht]
     \centering
     \setlength\heavyrulewidth{0.25ex}
     \begin{tabular}{@{}ccccccc@{}}
@@ -669,7 +672,7 @@
     \begin{subfigure}{0.42\linewidth}
         \centering
         \includegraphics[width=\linewidth, trim={45 35 35 60}, clip]{figures/karate_club_sbm.png}
-        \caption{Clustering proposed by the SBM-VEM method.}
+        \caption{Clustering proposed by Daudin-EM.}
         \label{fig:zachary_SBM}
     \end{subfigure}
 
@@ -678,7 +681,7 @@
     \begin{subfigure}{0.42\linewidth}
         \centering
         \includegraphics[width=\linewidth, trim={45 35 35 60}, clip]{figures/karate_club_newman.png}
-        \caption{Clustering proposed by the Newman SBM method.}
+        \caption{Clustering proposed by Newman-EM.}
         \label{fig:zachary_newman}
     \end{subfigure}
     \hspace{1em}
@@ -688,7 +691,7 @@
         \caption{Clustering proposed by the spectral method.}
         \label{fig:zachary_spectral}
     \end{subfigure}
-    \caption{Clustering results for Karate Club.}
+    \caption{Clustering results for Zachary's Karate Club.}
     \label{fig:zachary_results}
 \end{figure*}
 
@@ -713,21 +716,21 @@
 \subsection{Cora}
 \label{app:cora}
 
-\hphantom{.}
+% \hphantom{.}
 
 \begin{figure}[H]
     \centering
     \hfill
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=\linewidth, trim={45 35 35 40}, clip]{figures/cora_gt.png}
+        \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_gt.png}
         \caption{Ground truth.}
         \label{fig:cora_gt}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=\linewidth, trim={45 35 35 40}, clip]{figures/cora_SBM.png}
+        \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_sbm.png}
         \caption{Clustering proposed by Daudin-EM.}
         \label{fig:cora_SBM}
     \end{subfigure}
@@ -738,14 +741,14 @@
     \hfill
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=\linewidth, trim={45 35 35 40}, clip]{figures/cora_Newman.png}
-        \caption{Clustering proposed by Newman-EM method.}
+        \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_Newman.png}
+        \caption{Clustering proposed by Newman-EM.}
         \label{fig:cora_newman}
     \end{subfigure}
     \hfill
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=\linewidth, trim={35 25 25 30}, clip]{figures/cora_spetral.png}
+        \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_spetral.png}
         \caption{Clustering proposed by the spectral method.}
         \label{fig:cora_spectral}
     \end{subfigure}
@@ -765,7 +768,7 @@
         \multicolumn{1}{c|}{Ground truth} & \multicolumn{1}{c|}{-}             & -                             & \multicolumn{1}{c|}{-}       & 0.64                        & 0.09                         & 0.19                                          & 0.06 & 0.12 & 0.23 & 0.10 & 0.22 & 0.16 \\
         \multicolumn{1}{c|}{Duadin-EM}    & \multicolumn{1}{c|}{3802}          & 0.15                          & \multicolumn{1}{c|}{0.70}    & 0.22                        & -                            & 0                                             & 0.16 & 0    & 0.29 & 0.25 & 0    & 0.86 \\
         \multicolumn{1}{c|}{Newman-EM}    & \multicolumn{1}{c|}{27}            & 0.18                          & \multicolumn{1}{c|}{0.76}    & 0.53                        & -                            & 0.25                                          & 0.06 & 0.16 & 0.28 & 0.12 & 0.29 & 0.18 \\
-        \multicolumn{1}{c|}{Spectral}     & \multicolumn{1}{c|}{1}             & 0.02                          & \multicolumn{1}{c|}{0.23}    & 0.03                        & -                            & 0.6                                           & 0.09 & 0    & 0    & 0    & 0    & 0    \\ \bottomrule
+        \multicolumn{1}{c|}{Spectral}     & \multicolumn{1}{c|}{1}             & 0.01                          & \multicolumn{1}{c|}{0.21}    & 0.02                        & -                            & 0                                             & 0    & 0.09 & 0    & 0    & 0.66 & 0    \\ \bottomrule
     \end{tabular}
     \caption{Results on Cora.}
     \label{tab:cora_results}
