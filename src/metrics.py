@@ -1,13 +1,25 @@
 import numpy as np
-from sklearn import metrics
+
 
 # Supervised metrics
 
 
-def rand_index(gt, pred):
-    """Measures similarity between two clusterings by comparing
-    the number of pairs of elements that are assigned in the same or in different clusters,
-    in the predicted and true clusterings.
+def rand_index(gt: np.ndarray, pred: np.ndarray):
+    """
+    Measures similarity between two clusterings by comparing the number of pairs of elements
+    that are assigned in the same or in different clusters, in the predicted and true clusterings.
+
+    Parameters
+    ----------
+    gt : np.ndarray
+        Ground truth labelling.
+    pred : np.ndarray
+        Predicted labelling.
+
+    Returns
+    -------
+    float
+        Rand index.
     """
     grouped_gt = gt[:, None] == gt[None, :]
     grouped_pred = pred[:, None] == pred[None, :]
@@ -32,12 +44,41 @@ def rand_index(gt, pred):
 
 
 def entropy(p):
+    """
+    Compute the entropy of a discrete probability distribution.
+
+    Parameters
+    ----------
+    p : np.ndarray
+        Probability distribution.
+
+    Returns
+    -------
+    float
+        Entropy.
+    """
     p[p == 0] = 1  # Avoid division by zero
     return -np.sum(p * np.log(p))
 
 
 def mutual_information(gt, pred, Q=None):
-    """Measures the similarity between two clusterings by assessing how much information is needed to infer one clustering from the other."""
+    """
+    Measures the similarity between two clusterings by assessing how much information is needed to infer one clustering from the other.
+
+    Parameters
+    ----------
+    gt : np.ndarray
+        Ground truth labelling.
+    pred : np.ndarray
+        Predicted labelling.
+    Q : int, optional
+        Number of classes. If not provided, the maximum value in gt and pred will be used.
+
+    Returns
+    -------
+    float
+        Mutual information.
+    """
     if Q is None:
         Q = max(gt.max(), pred.max()) + 1
     p_gt = np.bincount(gt, minlength=Q) / gt.shape[0]
@@ -54,7 +95,23 @@ def mutual_information(gt, pred, Q=None):
 
 
 def normalized_mutual_information(gt, pred, Q=None):
-    """Normalized version of mutual information."""
+    """
+    Normalized version of mutual information.
+
+    Parameters
+    ----------
+    gt : np.ndarray
+        Ground truth labelling.
+    pred : np.ndarray
+        Predicted labelling.
+    Q : int, optional
+        Number of classes. If not provided, the maximum value in gt and pred will be used.
+
+    Returns
+    -------
+    float
+        Normalized Mutual information.
+    """
     if Q is None:
         Q = max(gt.max(), pred.max()) + 1
     p_gt = np.bincount(gt) / gt.shape[0]
@@ -69,15 +126,42 @@ def normalized_mutual_information(gt, pred, Q=None):
 
 
 def SBM_clustering_coefficient(alpha, pi):
+    """
+    Compute the clustering coefficient as estimated using the SBM with parameters alpha and pi.
+
+    Parameters
+    ----------
+    alpha : np.ndarray
+        Class membership probabilities.
+    pi : np.ndarray
+        Connection probabilities between classes.
+
+    Returns
+    -------
+    float
+        Estimated clustering coefficient.
+    """
+    pi = np.where(pi == np.inf, 1, pi)
     return np.einsum(
         "q, l, m, ql, qm, lm ->", alpha, alpha, alpha, pi, pi, pi
     ) / np.einsum("q, l, m, ql, qm ->", alpha, alpha, alpha, pi, pi)
 
 
 def clustering_coefficient(X, cluster=None):
-    """Compute the clustering coefficient over the specified cluster. Also called "transitivity".
-    cluster is the mask indicating which nodes are in the considered cluster.
-    If cluster is None, compute the clustering coefficient over the whole graph.
+    """
+    Compute the clustering coefficient over the specified cluster. Also called "transitivity".
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    cluster : np.ndarray, optional
+        Mask indicating which nodes are in the considered cluster. If not provided, the whole graph will be considered.
+
+    Returns
+    -------
+    float
+        Clustering coefficient.
     """
     sub_X = X if cluster is None else X[cluster, :][:, cluster]
     degrees = np.sum(sub_X, axis=1)
@@ -89,7 +173,23 @@ def clustering_coefficient(X, cluster=None):
 
 
 def intra_cluster_density(X, cluster, weighted=False):
-    """cluster is the mask indicating which nodes are in the considered cluster"""
+    """
+    Compute the intra-cluster density over the specified cluster.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    cluster : np.ndarray
+        Mask indicating which nodes are in the considered cluster.
+    weighted : bool, optional
+        Whether to consider the weights of the edges. By default False.
+
+    Returns
+    -------
+    float
+        Intra-cluster density.
+    """
     if weighted:
         nb_internal_edges = np.sum(X[cluster, :][:, cluster]) / 2
     else:
@@ -99,7 +199,23 @@ def intra_cluster_density(X, cluster, weighted=False):
 
 
 def inter_cluster_density(X, cluster, weighted=False):
-    """cluster is the mask indicating which nodes are in the considered cluster"""
+    """
+    Compute the inter-cluster density over the specified cluster.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    cluster : np.ndarray
+        Mask indicating which nodes are in the considered cluster.
+    weighted : bool, optional
+        Whether to consider the weights of the edges. By default False.
+
+    Returns
+    -------
+    float
+        Inter-cluster density.
+    """
     if weighted:
         nb_external_edges = np.sum(X[cluster, :][:, np.logical_not(cluster)])
     else:
@@ -110,8 +226,20 @@ def inter_cluster_density(X, cluster, weighted=False):
 
 
 def conductance(X, cluster):
-    """A good cluster should have low conductance, especially compared to the lowest conductance on the graph.
-    cluster is the list of indices of nodes in the considered cluster.
+    """
+    A good cluster should have low conductance, especially compared to the lowest conductance on the graph.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    cluster : np.ndarray
+        Mask indicating which nodes are in the considered cluster.
+
+    Returns
+    -------
+    float
+        Conductance.
     """
     a = np.sum(X[cluster])
     b = np.sum(X) - np.sum(X[np.logical_not(cluster)])
@@ -119,9 +247,22 @@ def conductance(X, cluster):
 
 
 def modularity_simple(X, clustering):
-    """The modularity of a clustering compares the observed connectivity within clusters to
+    """
+    The modularity of a clustering compares the observed connectivity within clusters to
     its expected value for a random graph with the same degree distribution.
     Implemented as presented by M. E. J. Newman and M. Girvan in https://arxiv.org/abs/cond-mat/0308217.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    clustering : np.ndarray
+        Array of clusters, where a cluster is a mask indicating which nodes are in the considered cluster.
+
+    Returns
+    -------
+    float
+        Modularity.
     """
     m = (X.trace() + np.sum(X)) / 2
     c = clustering.shape[0]
@@ -137,10 +278,23 @@ def modularity_simple(X, clustering):
 
 
 def modularity(X, clustering):
-    """The modularity of a clustering compares the observed connectivity within clusters to
+    """
+    The modularity of a clustering compares the observed connectivity within clusters to
     its expected value for a random graph with the same degree distribution.
     We here make the common assumption that the random graph resulting from the configuration model contains no self-loops and no multiple edges.
     Implemented as presented in matrix form by M. E. J. Newman in https://arxiv.org/abs/physics/0602124
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    clustering : np.ndarray
+        Array of clusters, where a cluster is a mask indicating which nodes are in the considered cluster.
+
+    Returns
+    -------
+    float
+        Modularity.
     """
     m = (X.trace() + np.sum(X)) / 2
     S = np.transpose(clustering).astype(int)
@@ -150,10 +304,23 @@ def modularity(X, clustering):
 
 
 def modularity_v2(X, clustering):
-    """The modularity of a clustering compares the observed connectivity within clusters to
+    """
+    The modularity of a clustering compares the observed connectivity within clusters to
     its expected value for a random graph with the same degree distribution.
     We here make the common assumption that the random graph resulting from the configuration model contains no self-loops and no multiple edges.
     Implemented as presented by B.H.Good, Y.A. de Montjoye and A. Clauset in https://arxiv.org/abs/0910.0165.pdf.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Adjacency matrix.
+    clustering : np.ndarray
+        Array of clusters, where a cluster is a mask indicating which nodes are in the considered cluster.
+
+    Returns
+    -------
+    float
+        Modularity.
     """
     m = (X.trace() + np.sum(X)) / 2
     c = len(clustering)

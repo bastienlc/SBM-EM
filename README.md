@@ -33,12 +33,13 @@ The following notebooks were left in the repository for the sake of completeness
 
 | Name | Content |
 | --- | --- |
-| `experiments_real.ipynb` | Experiments on the Cora and Karate Club datasets. |
+| `experiments_daudin_EM.ipynb` | Experiments on the Cora and Karate Club datasets using the EM algorithm proposed by Daudin et. al. |
+| `experiments_newman_EM.ipynb` | Experiments on the Cora and Karate Club datasets using the EM algorithm proposed by Newman et. al. |
 | `experiments_SBM.ipynb` | Experiments on a dataset synthetically generated with the SBM model. |
+| `experiments_spectral.ipynb` | Experiments on the Cora and Karate Club datasets using a spectral method. |
 | `fixed_point_convergence.ipynb` | An investigation into the convergence of the fixed point algorithm proposed by Daudin et. al. |
 | `implementations_speed.ipynb` | A comparison of the speeds of different implementations of the algorithm. |
-| `experiments_newman.ipynb` | Experiments with the Newman variant of the algorithm. |
-| `metrics.ipynb` | Test some clustering metrics. |
+| `Newman_Loops_first_tests.ipynb` | First Experiments with the Newman variant of the algorithm. |
 
 ## Contributors
 

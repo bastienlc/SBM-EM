@@ -405,7 +405,12 @@ class PytorchLogImplementation(PytorchImplementation):
         return tau
 
     def log_likelihood(
-        self, X: torch.Tensor, alpha: torch.Tensor, pi: torch.Tensor, tau: torch.Tensor
+        self,
+        X: torch.Tensor,
+        alpha: torch.Tensor,
+        pi: torch.Tensor,
+        tau: torch.Tensor,
+        elbo: Optional[bool] = True,
     ) -> float:
         """
         Computes the log-likelihood.
@@ -420,6 +425,8 @@ class PytorchLogImplementation(PytorchImplementation):
             Estimated pi parameters.
         tau : torch.Tensor
             Current tau matrix.
+        elbo : bool, optional
+            If True, calculates the evidence lower bound, by default True.
 
         Returns
         -------
@@ -430,7 +437,8 @@ class PytorchLogImplementation(PytorchImplementation):
         Q = alpha.shape[0]
         ll = 0
         ll += torch.sum(tau * torch.log(alpha).expand(n, -1), dim=[0, 1])
-        ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
+        if elbo:
+            ll -= torch.sum(tau * torch.log(tau), dim=[0, 1])
         for q in range(Q):
             ll += (
                 1

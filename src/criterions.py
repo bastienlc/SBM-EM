@@ -13,7 +13,7 @@ def ICL_criterion(
     alpha: np.ndarray,
     pi: np.ndarray,
     tau: np.ndarray,
-    implementation: str = "pytorch",
+    implementation: str = "pytorch_log",
 ) -> float:
     """
     Computes the ICL (Integrated Complete-data Likelihood) criterion.
@@ -51,12 +51,12 @@ def ICL_criterion(
 
 def draw_criterion(
     X: np.ndarray,
-    min_Q: int = 1,
-    max_Q: int = 20,
+    Q_to_test: np.array,
     em_n_init: int = 10,
     em_iterations: int = 100,
-    implementation: str = "pytorch",
+    implementation: str = "pytorch_log",
     verbose: Optional[bool] = True,
+    save_as: Optional[str] = None,
 ) -> None:
     """
     Draws the ICL criterion plot for different numbers of classes.
@@ -65,10 +65,8 @@ def draw_criterion(
     ----------
     X : np.ndarray
         The adjacency matrix of the graph.
-    min_Q : int, optional
-        The minimum number of classes, by default 1.
-    max_Q : int, optional
-        The maximum number of classes, by default 20.
+    Q_to_test : np.array
+        List of values of Q to test.
     em_n_init : int, optional
         The number of runs to perform in parallel during EM algorithm, by default 10.
     em_iterations : int, optional
@@ -77,17 +75,18 @@ def draw_criterion(
         The implementation to use, by default "pytorch".
     verbose : bool, optional
         Whether to print progress information, by default True.
+    save_as: str, optional
+        The name under which to save the figure. If not provided, figure is not saved.
 
     Returns
     -------
     None
     """
     y = []
-    Q_list = list(range(min_Q, max_Q + 1))
-    for Q in Q_list:
+    for Q in Q_to_test:
         if verbose:
             print(f"Running EM algorithm for Q = {Q}...")
-        alpha, pi, tau = em_algorithm(
+        alpha, pi, tau, _ = em_algorithm(
             X,
             Q,
             n_init=em_n_init,
@@ -99,10 +98,12 @@ def draw_criterion(
         if verbose:
             print(f"ICL criterion for Q = {Q} : {y[-1]}\n")
 
-    plt.plot(Q_list, y)
+    plt.plot(Q_to_test, y)
     index = np.argmax(y)
-    plt.axvline(x=Q_list[index], color="red")
+    plt.axvline(x=Q_to_test[index], color="red")
     plt.title("ICL criterion")
     plt.xlabel("Number of classes")
-    plt.ylabel("Criterion")
+    plt.ylabel("ICL")
+    if save_as is not None:
+        plt.savefig(f"images/{save_as}")
     plt.show()

@@ -1,6 +1,6 @@
 Experiment 1
 Number of graphs passed: 10
-Params distance: 0.1595002877159247 +/- 0.062053057002891966
+Params distance: 0.1250579138190352 +/- 0.05876677081749798
 ELBO difference: -0.4128269223375157 +/- 1.3964093899861247
 NMI: 0.06880816665653235 +/- 0.0725898297467832
 Rand index: 0.5154022988505746 +/- 0.10200681549898592
@@ -8,8 +8,8 @@ True modularity: 0.021712246650389712 +/- 0.03508782542863998
 Pred modularity: -0.009074341576314008 +/- 0.038579941953542266
 
 Metrics with best graphs:
-Best graph for params distance: 2
-Params distance: 0.03726791076157533
+Best graph for params distance: 4
+Params distance: 0.036859533924947036
 Best graph for elbo: 4
 ELBO difference: 0.16689822473003219
 Best graph for NMI: 8
