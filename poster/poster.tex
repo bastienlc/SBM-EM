@@ -29,6 +29,9 @@
 \usepackage{anyfontsize}
 \usepackage{multirow}
 \usepackage{stmaryrd}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{amsmath}
 
 % ====================
 % Lengths
@@ -134,6 +137,50 @@
       \end{block}
 
       \begin{alertblock}{The variational Expectation-Maximization algorithm}
+        In \cite{main_article}, the authors propose a variational Expectation-Maximization (EM) algorithm to fit the SBM. The log-likelihood of the model writes :
+        \begin{equation}
+          \log \mathcal{L}(X, Z) =  \sum_{i}\sum_{q} Z_{iq}\log\alpha_q + \frac{1}{2}\sum_{i\neq j}\sum_{q,l} Z_{iq}Z_{jl} \, \pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}
+        \end{equation}
+        This likelihood does not lead to a closed form solution for the parameters of the model. Using an EM algorithm, there is no closed form solution for the E-step either. Instead the authors search for an approximated distribution $R_X$ of $Z$ given $X$ among the family of product of multinomial distributions, thus introducing the random variables $\tau_i\in [0,1]^Q$ for $i\in \llbracket 1,n \rrbracket$. This approximation leads to maximizing the following lower bound of $\log \mathcal{L}(X)$ :
+        \begin{equation}
+          \label{eq:lower_bound}
+          \mathcal{J}(R_X)=\log \mathcal{L}(X)-\KL[R_X(\cdot), P(\cdot|X)]
+        \end{equation}
+        The authors are able to derive a closed form solution for the M-step of the algorithm, and a fixed point relation for the E-step :
+        \begin{equation}
+          \begin{cases}
+            \hat{\tau}_{iq}\propto \alpha_q \prod_{j\neq i}\prod_l \left[\pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}\right]^{\hat{\tau}_{jl}} & \text{(E-step)} \\
+            \hat{\alpha}_q=\frac{1}{n}\sum_{i} \tau_{iq}                                                                                   & \text{(M-step)} \\
+            \hat{\pi}_{ql}=\frac{\sum_{i\neq j} \tau_{iq}\tau_{jl}X_{ij}}{\sum_{i\neq j} \tau_{iq}\tau_{jl}}                               & \text{(M-step)}
+          \end{cases}
+        \end{equation}
+        \centering
+        \begin{minipage}{.9\linewidth}
+          \begin{algorithm}[H]
+            \caption{Variational Expectation-Maximization Algorithm}
+            \begin{algorithmic}[1]
+              \State \textbf{Input:} Adjacency matrix $X$, number of communities $Q$
+              \State \textbf{Initialize:} Initialize $\tau_{iq}$ for $i \in \llbracket 1, n \rrbracket$, $q \in \llbracket 1, Q \rrbracket$
+              \While{not converged}
+              \State \textbf{\emph{E-step:}}
+              \For{$i \in \llbracket 1, n \rrbracket$}
+              \For{$q \in \llbracket 1, Q \rrbracket$}
+              \State \textbf{\emph{Fixed-point algorithm:}}
+              \State $\hat{\tau}_{iq} \propto \alpha_q \prod_{j\neq i}\prod_l \left[\pi_{ql}^{X_{ij}}(1-\pi_{ql})^{1-X_{ij}}\right]^{\hat{\tau}_{jl}}$\Comment{Update class memberships}
+              \EndFor
+              \EndFor
+              \State
+              \State \textbf{\emph{M-step:}}
+              \For{$q \in \llbracket 1, Q \rrbracket$}
+              \State $\hat{\alpha}_q = \frac{1}{n}\sum_{i} \tau_{iq}$ \Comment{Update class proportions}
+              \State $\hat{\pi}_{ql} = \frac{\sum_{i\neq j} \tau_{iq}\tau_{jl}X_{ij}}{\sum_{i\neq j} \tau_{iq}\tau_{jl}}$ \Comment{Update edge probabilities}
+              \EndFor
+              \EndWhile
+              \State \textbf{Return:} $\hat{\alpha}, \hat{\pi}, \hat{\tau}$
+            \end{algorithmic}
+          \end{algorithm}
+        \end{minipage}
+
       \end{alertblock}
 
       \begin{block}{Variants}
