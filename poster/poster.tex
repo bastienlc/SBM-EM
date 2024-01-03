@@ -11,7 +11,7 @@
 
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[orientation=portrait,size=a1,scale=1.0]{beamerposter}
+\usepackage[orientation=portrait,size=a0,scale=1.0]{beamerposter}
 \usetheme{gemini}
 \usecolortheme{nott}
 \usepackage{graphicx}
@@ -28,6 +28,7 @@
 \pgfplotsset{compat=1.18}
 \usepackage{anyfontsize}
 \usepackage{multirow}
+\usepackage{stmaryrd}
 
 % ====================
 % Lengths
@@ -95,6 +96,41 @@
       \end{block}
 
       \begin{block}{The Stochastic Block Model}
+        \begin{column}{0.5\colwidth}
+          \justifying
+          The \textbf{Stochastic Block Model} is a \textit{mixture} model for graphs. Each node is assigned to a \textit{class}, and conditionally on these classes the probability of an edge between two nodes $i$ and $j$ only depends on their class memberships. This model draws inspiration from mixture models for distribution of degrees, and the Erdös-Rényi model which deals with the probability for two given nodes of being connected.
+        \end{column}
+        \begin{column}{0.5\colwidth}
+          \begin{figure}[H]
+            \centering
+            \tikz{
+              \node[obs] (X_{ij}) {$X_{ij}$};
+              \node[latent,left=of X_{ij}, xshift=-3cm, label={[name=label1,text height=1.2em]below:$i=1,\dots,n$}] (Z_i) {$Z_i$};
+              \node[latent,right=of X_{ij}, xshift=3cm, label={[name=label2,text height=1.2em]below:$j=i+1,\dots,n$}] (Z_j) {$Z_j$};
+              \node[const, above=of X_{ij}, yshift=0cm](alpha){$\alpha$};
+              \node[const, below=of X_{ij}, yshift=-2cm](pi){$\pi$};
+              \plate [inner sep=.5cm] {} {(Z_i)(X_{ij})(Z_j)(label1)(label2)} {};
+              \plate [inner sep=.25cm] {} {(Z_j)(X_{ij})(label2)} {};
+              \edge {Z_i,Z_j} {X_{ij}}
+              \edge {alpha} {Z_i}
+              \edge {alpha} {Z_j}
+              \edge {pi} {X_{ij}}
+            }
+            \caption{Graphical model of the SBM}
+            \label{fig:graphical_model}
+          \end{figure}
+        \end{column}
+
+        Formally, we consider an undirected graph with $n$ nodes and no self-loops. We denote $X$ the adjacency matrix of this graph, thus $X_{ij}\in \{0,1\}$ denotes the existence of an edge between nodes $i$ and $j$.
+
+        The model is parametrized by $Q$ the number of classes, $\alpha\in [0,1]^Q$ the prior distribution on the classes, and $\pi\in [0,1]^{Q\times Q}$ the probability of an edge between two nodes of different classes. We also introduce the random variables $Z_i\in \{0,1\}^Q$ for $i\in \llbracket 1,n \rrbracket$, that represent the membership of node $i$ to each class. The prior distributions on $Z$ and $X$ are given by :
+        \begin{equation}
+          \begin{cases}
+            \forall i\in \llbracket 1,n \rrbracket, \quad \sum_{q=1}^Q Z_{iq} = 1 \quad\text{(unique class)}            \\
+            \forall q\in \llbracket 1,Q \rrbracket,\quad \mathbb{P}(Z_{iq}=1)=\alpha_q \quad\text{(class distribution)} \\
+            \forall q,l\in \llbracket 1,Q \rrbracket, \quad \forall i\neq j\in \llbracket 1,n \rrbracket, \quad \mathbb{P}(X_{ij}=1\,|\,Z_{iq}=1,Z_{jl}=1)=\pi_{ql} \quad\text{(edge probability)}
+          \end{cases}
+        \end{equation}
       \end{block}
 
       \begin{alertblock}{The variational Expectation-Maximization algorithm}
