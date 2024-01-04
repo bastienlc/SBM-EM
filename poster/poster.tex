@@ -147,7 +147,7 @@
       \end{block}
 
       \begin{alertblock}{The variational Expectation-Maximization algorithm}
-        In \cite{main_article}, Daudi et. al. propose a variational EM algorithm to fit the SBM.
+        In \cite{main_article}, Daudin \textit{et al.} propose a variational EM algorithm to fit the SBM.
         \begin{equation*}
           \log \mathcal{L}(X, Z) =  \sum_{i}\sum_{q} Z_{iq}\log\alpha_q + \frac{1}{2}\sum_{i\neq j}\sum_{q,l} Z_{iq}Z_{jl} \, \log\left( \pi_{ql}^{X_{ij}}\left(1-\pi_{ql}\right)^{1-X_{ij}} \right)
         \end{equation*}
@@ -155,7 +155,7 @@
         \newline
         \textbf{Problem :} Using an EM algorithm, no closed-form solution for the E-step either. %! 
         \newline
-        \textbf{Solution: }Daudin et. al. search for an approximated distribution $R_X$ of $Z$ given $X$, among the family of product of multinomial distributions, thus introducing the random variables $\tau_i\in [0,1]^Q$ for $i\in \llbracket 1,n \rrbracket$. This approximation leads to maximizing the following lower bound of $\log \mathcal{L}(X)$ :
+        \textbf{Solution:} Daudin \textit{et al.} search for an approximated distribution $R_X$ of $Z$ given $X$, among the family of product of multinomial distributions, thus introducing the random variables $\tau_i\in [0,1]^Q$ for $i\in \llbracket 1,n \rrbracket$. This approximation leads to maximizing the following lower bound of $\log \mathcal{L}(X)$ :
         \begin{equation*}
           \label{eq:lower_bound}
           \mathcal{J}(R_X)=\log \mathcal{L}(X)-\KL[R_X(\cdot), P(\cdot|X)]
@@ -206,7 +206,7 @@
                   \mathcal{L}(X) = \sum_{i=1}^n\sum_{q=1}^Q \tau_{iq} \left[ \log(\alpha_q) + \sum_{j=1}^n X_{ij} \log(\Pi_{q, j}) \right] \quad \text{where} \quad \tau_{iq} = \mathbb{P}(Z_{iq} = 1 | X, \alpha, \Pi).
                 \end{equation*}
 
-                The EM updates are,
+                Denoting $k_i$ he degree of node $i \in \llbracket 1, n \rrbracket$, the EM updates are
                 \begin{equation*}
                   \text{(E-step) }\,\hat{\tau}_{iq} = \frac{\alpha_q\prod_{j=1}^N \Pi_{qj}^{X_{ij}}}{\sum_{s=1}^Q \alpha_s\prod_{j=1}^N \Pi_{sj}^{X_{ij}}}; \qquad \text{(M-step) }\,\hat{\alpha}_q = \frac{1}{n} \sum_{i=1}^n \tau_{iq} \,\text{ and }\, \hat{\Pi}_{qj} = \frac{\sum_{i=1}^n X_{ij}\tau_{iq} }{\sum_{i=1}^n k_i \tau_{iq}}
                 \end{equation*}
@@ -255,12 +255,12 @@
         \end{column}
         % \usebeamertemplate{itemize item} 
         %For each experiment, a sample graph is visualized (with one color per cluster) along with the prediction.
-        \usebeamertemplate{itemize item}
+        \textcolor{nottblue}{\usebeamertemplate{itemize item}}
         \textbf{Metric for model-fitting capacity}: Sum of (cluster-permutation-invariant) Euclidean distances between predicted $(\alpha, \pi)$ and the ground truth of Table \ref{tab:sbm_parameters}. The result is normalized by the number of classes.
         \newline
-        \usebeamertemplate{itemize item}
+        \textcolor{nottblue}{\usebeamertemplate{itemize item}}
         \textbf{Metric for clustering capacity}: Normalized Mutual information (NMI) and Rand Index (RI).\newline
-        \textbf{NB}: The fixed-point algorithm does not always converge within $1000$ iterations per graph.
+        \textbf{NB}: The fixed-point algorithm does not always converge within $1000$ iterations for all graphs.
 
         \begin{figure}[h]
           \begin{subfigure}{0.49\linewidth}
@@ -312,47 +312,57 @@
       \end{block}
 
       \begin{block}{Experiments: Cora dataset}
-        \textbf{The Cora dataset \cite{cora}} (citation network of scientific publications): Undirected graph of 2708 nodes (=papers) labeled with 7 different classes and 5429 edges(=citations).
-        % \newline
-        % \scriptsize{G.T.: 1: Case Based; 2: Genetic Algorithms; 3: Neural Networks; 4: Probabilistic Methods; 5: Reinforcement Learning; 6: Rule Learning; 7: Theory.}
-        \begin{figure}[H]
-          \centering
-          \hfill
-          \begin{subfigure}{0.36\linewidth}
+        All three methods are tested on the \textbf{Cora citation network} \cite{cora}: an undirected graph of 2708 nodes (\textit{i.e.}, scientific papers) connected by 5429 edges (\textit{i.e.}, citations). Nodes are labeled into 7 different classes:\\
+        {\small \centering \textbf{1:} Cases $-$ \textbf{2:} Genetic Alg. $-$ \textbf{3:} Neural Net. $-$ \textbf{4:} Prob. Methods $-$ \textbf{5:} Reinforcement Learning $-$ \textbf{6:} Rule Learning $-$ \textbf{7:} Theory}
+        \begin{column}{0.73\colwidth}
+          \begin{figure}[H]
             \centering
-            \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_gt.png}
-            \caption{Ground truth
-            }
-            \label{fig:cora_gt}
-          \end{subfigure}
-          \hspace{1em}
-          \begin{subfigure}{0.36\linewidth}
-            \centering
-            \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_sbm.png}
-            \caption{Daudin \textit{et al.}}
-            \label{fig:cora_SBM}
-          \end{subfigure}
-          \hfill
-          \medskip
-          \hfill
-          \begin{subfigure}{0.36\linewidth}
-            \centering
-            \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_Newman.png}
-            \caption{Newman \textit{et al.}}
-            \label{fig:cora_newman}
-          \end{subfigure}
-          \hspace{1em}
-          \begin{subfigure}{0.36\linewidth}
-            \centering
-            \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_spetral.png}
-            \caption{Spectral clustering}
-            \label{fig:cora_spectral}
-          \end{subfigure}
-          \hfill
-          \caption{Dot-plot of the results for Cora.}
-          \label{fig:cora_results}
-        \end{figure}
-
+            \hfill
+            \begin{subfigure}{0.45\linewidth}
+              \centering
+              \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_gt.png}
+              \caption{Ground truth
+              }
+              \label{fig:cora_gt}
+            \end{subfigure}
+            \hspace{0.5em}
+            \begin{subfigure}{0.45\linewidth}
+              \centering
+              \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_sbm.png}
+              \caption{Daudin \textit{et al.} (50 iterations)}
+              \label{fig:cora_SBM}
+            \end{subfigure}
+            \hfill
+            \medskip
+            \hfill
+            \begin{subfigure}{0.45\linewidth}
+              \centering
+              \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_Newman.png}
+              \caption{Newman \textit{et al.} (100 iterations)}
+              \label{fig:cora_newman}
+            \end{subfigure}
+            \hspace{0.5em}
+            \begin{subfigure}{0.45\linewidth}
+              \centering
+              \includegraphics[width=\linewidth, trim={45 25 35 40}, clip]{figures/cora_spetral.png}
+              \caption{Spectral clustering}
+              \label{fig:cora_spectral}
+            \end{subfigure}
+            \hfill
+            \caption{\centering Dot-plot of the clustering of Cora for all $3$ methods}
+            \label{fig:cora_results}
+          \end{figure}
+        \end{column}
+        \begin{column}{0.27\colwidth}
+          \vspace{4em}
+          \begin{itemize} \setlength\itemsep{1.5em}
+            \justifying
+            \item \textbf{Daudin-EM} yields similar results as \textbf{Newman-EM} for the supervised metrics.
+            \item \textbf{Daudin-EM} reveals some good-quality clusters (2, 4) despite some clusters having a clustering coefficient of 0.
+            \item \textbf{Newman-EM} predicts the closest clustering coefficients to the ground truth.
+            \item \textbf{Spectral clustering} performs comparatively poorly.
+          \end{itemize}
+        \end{column}
         \begin{table}[H]
           \centering
           \small
@@ -360,29 +370,30 @@
           \begin{tabular}{@{}ccccccccccccc@{}}
             \toprule
             \multirow{2}{*}{\textbf{Method}}  & \multirow{2}{*}{\textbf{Time (s)}} & \multirow{2}{*}{\textbf{NMI}} & \multirow{2}{*}{\textbf{RI}} & \multirow{2}{*}{\textbf{M}} & \multirow{2}{*}{\textbf{CC}} & \multicolumn{7}{c}{\textbf{CC (per cluster)}}                                           \\
-                                              &                                    &                               &                              &                             &                              & 1                                             & 2    & 3    & 4    & 5    & 6    & 7    \\ \midrule
+                                              &                                    &                               &                              &                             &                              & 1                                             & 2    & 3    & 4    & 5    & 6    & 7    \\ \midrule \midrule
             \multicolumn{1}{c|}{Ground truth} & \multicolumn{1}{c|}{-}             & -                             & \multicolumn{1}{c|}{-}       & 0.64                        & 0.09                         & 0.19                                          & 0.06 & 0.12 & 0.23 & 0.10 & 0.22 & 0.16 \\
-            \multicolumn{1}{c|}{Duadin-EM}    & \multicolumn{1}{c|}{3802}          & 0.15                          & \multicolumn{1}{c|}{0.70}    & 0.22                        & -                            & 0                                             & 0.16 & 0    & 0.29 & 0.25 & 0    & 0.86 \\
+            \multicolumn{1}{c|}{Daudin-EM}    & \multicolumn{1}{c|}{3802}          & 0.15                          & \multicolumn{1}{c|}{0.70}    & 0.22                        & -                            & 0                                             & 0.16 & 0    & 0.29 & 0.25 & 0    & 0.86 \\
             \multicolumn{1}{c|}{Newman-EM}    & \multicolumn{1}{c|}{27}            & 0.18                          & \multicolumn{1}{c|}{0.76}    & 0.53                        & -                            & 0.25                                          & 0.06 & 0.16 & 0.28 & 0.12 & 0.29 & 0.18 \\
             \multicolumn{1}{c|}{Spectral}     & \multicolumn{1}{c|}{1}             & 0.01                          & \multicolumn{1}{c|}{0.21}    & 0.02                        & -                            & 0                                             & 0    & 0.09 & 0    & 0    & 0.66 & 0    \\ \bottomrule
           \end{tabular}
-          \caption{Results on Cora.}
+          \caption{Results on the Cora dataset. \textbf{M}: Modularity; \textbf{CC}: Clustering Coefficient.}
         \end{table}
 
       \end{block}
 
       \begin{exampleblock}{Discussion}
-        \begin{column}{0.5\colwidth}
+        \begin{column}{0.51\colwidth}
           \justifying
           \begin{itemize}
-            \item Whlile \cite{main_article} can reveal both homophilic and heterophilic properties of a graph, it is not as powerful as Newman's variant. (Cora experiments)
-            \item The algorithm is sensitive to node degrees' distribution (SBM dataset experiments).
-            \item Lack of guarantee of convergence of the fixed-point algorithm (see opposite figure: out of 50 runs of E-step with different initializations of $(\hat{\alpha}, \hat{\pi})$, only 40 runs converge in $100$ iterations.)
+            \item While Daudin-EM \cite{main_article} can reveal both homophilic and heterophilic properties of a graph, it is not as powerful as Newman's variant (\textit{cf.} Cora experiments).
+            \item The algorithm is sensitive to the distribution of node degrees (\textit{cf.} SBM experiments).
+            \item Lack of guarantee of convergence of the fixed-point algorithm (see opposite figure: out of 50 runs of E-step with different initializations of $(\hat{\alpha}, \hat{\pi})$, only 40 runs converge within $100$ iterations).
           \end{itemize}
+          \vspace{1em}
         \end{column}
-        \begin{column}{0.5\colwidth}
+        \begin{column}{0.49\colwidth}
           \centering\\
-          \includegraphics[width=0.76\linewidth]{figures/fixed-point-convergence.png}
+          \includegraphics[width=0.8\linewidth]{figures/fixed-point-convergence.png}
         \end{column}
       \end{exampleblock}
 
