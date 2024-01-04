@@ -187,7 +187,9 @@
               \State \textbf{\emph{M-step:}}
               \For{$q \in \llbracket 1, Q \rrbracket$}
               \State $\hat{\alpha}_q = \frac{1}{n}\sum_{i} \tau_{iq}$ \Comment{Update class proportions}
+              \For{$l \in \llbracket 1, Q \rrbracket$}
               \State $\hat{\pi}_{ql} = \frac{\sum_{i\neq j} \tau_{iq}\tau_{jl}X_{ij}}{\sum_{i\neq j} \tau_{iq}\tau_{jl}}$ \Comment{Update edge probabilities}
+              \EndFor
               \EndFor
               \EndWhile
               \State \textbf{Return:} $\hat{\alpha}, \hat{\pi}, \hat{\tau}$
@@ -199,14 +201,14 @@
 
       \begin{block}{Some alternative algorithms}
         \begin{itemize}
-          \item \justifying \textbf{Newman \textit{et al.} \cite{newman}} use a finer definition for clusters. While Daudin \textit{et al.} define a cluster-cluster affinity (nodes belonging to the same cluster behave the same way), the model of Newman introduces a cluster-node affinity. Therefore, edges between different nodes of the same two clusters are not necessarily equivalent. $\implies$ $\Pi_{q,i}$ denotes the probability of an edge between a node in cluster $q$ and node $i$.
+          \item \justifying \textbf{Newman \textit{et al.} \cite{newman}} use a finer definition for clusters. While the SBM deals with a cluster-cluster affinity (nodes belonging to the same cluster behave the same way), the model of Newman introduces a cluster-node affinity. Therefore, edges between different nodes of the same two clusters are not necessarily equivalent. $\implies$ $\Pi_{q,i}$ denotes the probability of an edge between a node in cluster $q$ and node $i$.
 
                 The expected log-likelihood (with respect to $Z$) is
                 \begin{equation*}
                   \mathcal{L}(X) = \sum_{i=1}^n\sum_{q=1}^Q \tau_{iq} \left[ \log(\alpha_q) + \sum_{j=1}^n X_{ij} \log(\Pi_{q, j}) \right] \quad \text{where} \quad \tau_{iq} = \mathbb{P}(Z_{iq} = 1 | X, \alpha, \Pi).
                 \end{equation*}
 
-                Denoting $k_i$ he degree of node $i \in \llbracket 1, n \rrbracket$, the EM updates are
+                Denoting $k_i$ the degree of node $i \in \llbracket 1, n \rrbracket$, the EM updates are
                 \begin{equation*}
                   \text{(E-step) }\,\hat{\tau}_{iq} = \frac{\alpha_q\prod_{j=1}^N \Pi_{qj}^{X_{ij}}}{\sum_{s=1}^Q \alpha_s\prod_{j=1}^N \Pi_{sj}^{X_{ij}}}; \qquad \text{(M-step) }\,\hat{\alpha}_q = \frac{1}{n} \sum_{i=1}^n \tau_{iq} \,\text{ and }\, \hat{\Pi}_{qj} = \frac{\sum_{i=1}^n X_{ij}\tau_{iq} }{\sum_{i=1}^n k_i \tau_{iq}}
                 \end{equation*}
